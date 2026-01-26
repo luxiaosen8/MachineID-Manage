@@ -6,7 +6,6 @@
 - **后端**: Rust + Tauri 2
 - **前端**: HTML/CSS/JavaScript（或 React/Vue.js）
 - **系统集成**: Windows 注册表操作 (`winreg` crate)
-- **任务追踪**: Beads (bd)
 
 ### 依赖管理规则
 - 严格限制在 Rust + Tauri 技术栈范围内
@@ -80,13 +79,6 @@ MachineID-Manage/
 
 ## 命令约定
 
-### Beads (bd) 命令
-- `bd init` - 初始化任务追踪
-- `bd sync` - 同步任务状态
-- `bd ready` - 查看可用任务
-- `bd show <id>` - 查看任务详情
-- `bd update <id> --status in_progress` - 认领任务
-- `bd close <id>` - 完成任务
 
 ### Tauri CLI 命令
 - `cargo tauri dev` - 开发模式运行
@@ -139,7 +131,6 @@ MachineID-Manage/
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```

@@ -21,8 +21,6 @@ pub enum BackupError {
     StorageError(String),
     #[error("备份不存在: {0}")]
     BackupNotFound(String),
-    #[error("无效的备份ID")]
-    InvalidBackupId,
     #[error("无效的 GUID 格式: {0}")]
     InvalidGuidFormat(String),
 }
@@ -146,13 +144,6 @@ pub fn list_backups() -> Result<Vec<MachineIdBackup>, BackupError> {
     Ok(store.backups)
 }
 
-pub fn get_backup_by_id(id: &str) -> Result<MachineIdBackup, BackupError> {
-    let store = load_backup_store()?;
-    store.get_backup(id)
-        .cloned()
-        .ok_or(BackupError::BackupNotFound(id.to_string()))
-}
-
 pub fn delete_backup(id: &str) -> Result<(), BackupError> {
     let mut store = load_backup_store()?;
     store.remove_backup(id)?;
@@ -263,34 +254,7 @@ pub fn get_backup_count() -> Result<usize, BackupError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use std::io::Write;
-    use std::path::Path;
     use tempfile::TempDir;
-
-    fn setup_test_backup_file(content: &str) {
-        let path = get_backup_file_path();
-        let mut file = File::create(&path).unwrap();
-        file.write_all(content.as_bytes()).unwrap();
-    }
-
-    fn cleanup_test_backup_file() {
-        let path = get_backup_file_path();
-        let _ = fs::remove_file(&path);
-    }
-
-    struct TestGuard;
-
-    impl Drop for TestGuard {
-        fn drop(&mut self) {
-            cleanup_test_backup_file();
-        }
-    }
-
-    fn cleanup_on_drop() -> TestGuard {
-        cleanup_test_backup_file();
-        TestGuard
-    }
 
     struct TempBackupDir {
         _guard: TempDir,
@@ -307,10 +271,6 @@ mod tests {
                 path: backup_path,
             }
         }
-
-        fn path(&self) -> &Path {
-            &self.path
-        }
     }
 
     impl Drop for TempBackupDir {
@@ -319,10 +279,13 @@ mod tests {
         }
     }
 
+    static TEST_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     fn with_temp_backup_dir<F>(test: F)
     where
         F: FnOnce(&TempBackupDir) + std::panic::UnwindSafe,
     {
+        let _lock = TEST_MUTEX.lock().unwrap();
         let temp_dir = TempBackupDir::new();
 
         let result = std::panic::catch_unwind(|| {
