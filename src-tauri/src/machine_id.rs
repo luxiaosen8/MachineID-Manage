@@ -241,6 +241,25 @@ pub fn get_backup_count() -> Result<usize, BackupError> {
      Ok(bytes)
  }
 
+ pub fn generate_random_guid() -> String {
+     let mut rng = rand::thread_rng();
+     let bytes: [u8; 16] = rand::Rng::gen(&mut rng);
+     
+     format!(
+         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+         bytes[0], bytes[1], bytes[2], bytes[3],
+         bytes[4], bytes[5],
+         bytes[6], bytes[7],
+         bytes[8], bytes[9],
+         bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+     )
+ }
+
+ pub fn generate_random_machine_guid(description: Option<String>) -> Result<MachineIdBackup, BackupError> {
+     let new_guid = generate_random_guid();
+     write_machine_guid(&new_guid, description)
+ }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -514,6 +533,66 @@ mod tests {
                 let result = write_machine_guid(invalid_guid, None);
                 assert!(result.is_err(), "应该拒绝无效格式: {}", invalid_guid);
             }
+        });
+    }
+
+    #[test]
+    fn test_generate_random_guid_format() {
+        let guid = generate_random_guid();
+        let result = validate_guid_format(&guid);
+        assert!(result.is_ok(), "随机生成的GUID应该格式正确: {}", guid);
+        assert_eq!(guid.len(), 36);
+
+        let parts: Vec<&str> = guid.split('-').collect();
+        assert_eq!(parts.len(), 5);
+        assert_eq!(parts[0].len(), 8);
+        assert_eq!(parts[1].len(), 4);
+        assert_eq!(parts[2].len(), 4);
+        assert_eq!(parts[3].len(), 4);
+        assert_eq!(parts[4].len(), 12);
+    }
+
+    #[test]
+    fn test_generate_random_guid_uniqueness() {
+        let mut guids = std::collections::HashSet::new();
+        for _ in 0..100 {
+            let guid = generate_random_guid();
+            assert!(guids.insert(guid), "应该生成唯一的GUID");
+        }
+    }
+
+    #[test]
+    fn test_generate_random_machine_guid() {
+        if !cfg!(target_os = "windows") {
+            return;
+        }
+
+        with_temp_backup_dir(|_temp_dir| {
+            let original_guid = read_machine_guid().unwrap();
+
+            let result = generate_random_machine_guid(None);
+
+            if let Err(BackupError::RegistryWriteError(_)) = result {
+                println!("⚠️ 跳过注册表写入测试: 需要管理员权限");
+                return;
+            }
+
+            assert!(result.is_ok(), "生成随机GUID应该成功: {:?}", result.err());
+
+            let new_guid = read_machine_guid().unwrap();
+            assert_ne!(new_guid.guid, original_guid.guid, "新GUID应该与原始GUID不同");
+
+            let parts: Vec<&str> = new_guid.guid.split('-').collect();
+            assert_eq!(parts.len(), 5);
+
+            let backups = list_backups().unwrap();
+            assert!(!backups.is_empty(), "应该存在备份记录");
+
+            let restore_result = write_machine_guid(&original_guid.guid, None);
+            assert!(restore_result.is_ok());
+
+            let restored_guid = read_machine_guid().unwrap();
+            assert_eq!(restored_guid.guid, original_guid.guid);
         });
     }
 }

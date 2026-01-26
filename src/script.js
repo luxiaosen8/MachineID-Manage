@@ -36,7 +36,7 @@ function initializeEventListeners() {
     });
     
     document.getElementById('generate-btn')?.addEventListener('click', () => {
-        console.log('生成按钮点击 - 功能开发中');
+        openRandomGenerateModal();
     });
     
     document.getElementById('replace-btn')?.addEventListener('click', () => {
@@ -64,6 +64,30 @@ function initializeEventListeners() {
             const value = e.target.value;
             validateGuidInput(value);
         }, 0);
+    });
+    
+    document.getElementById('close-random-modal')?.addEventListener('click', () => {
+        closeRandomGenerateModal();
+    });
+    
+    document.getElementById('cancel-random-btn')?.addEventListener('click', () => {
+        closeRandomGenerateModal();
+    });
+    
+    document.getElementById('confirm-random-btn')?.addEventListener('click', async () => {
+        await confirmRandomGenerate();
+    });
+    
+    document.querySelector('#random-generate-modal .modal')?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            closeRandomGenerateModal();
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeRandomGenerateModal();
+        }
     });
     
     document.querySelector('.modal')?.addEventListener('click', (e) => {
@@ -203,6 +227,115 @@ function displayReplaceResult(result) {
     } else {
         statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${result.error}</span>`;
         console.error('❌ 替换失败:', result.error);
+    }
+}
+
+function openRandomGenerateModal() {
+    const modal = document.getElementById('random-generate-modal');
+    const displayElement = document.getElementById('generated-guid-display');
+    const descriptionInput = document.getElementById('random-description-input');
+    const confirmBtn = document.getElementById('confirm-random-btn');
+    
+    const randomGuid = generateRandomGuid();
+    displayElement.textContent = randomGuid;
+    descriptionInput.value = '';
+    
+    modal.classList.add('show');
+}
+
+function closeRandomGenerateModal() {
+    const modal = document.getElementById('random-generate-modal');
+    modal.classList.remove('show');
+}
+
+function generateRandomGuid() {
+    const hexChars = '0123456789abcdef';
+    let guid = '';
+    
+    for (let i = 0; i < 32; i++) {
+        if (i === 8 || i === 12 || i === 16 || i === 20) {
+            guid += '-';
+        }
+        guid += hexChars[Math.floor(Math.random() * 16)];
+    }
+    
+    return guid;
+}
+
+async function confirmRandomGenerate() {
+    const displayElement = document.getElementById('generated-guid-display');
+    const descriptionInput = document.getElementById('random-description-input');
+    const confirmBtn = document.getElementById('confirm-random-btn');
+    const statusElement = document.getElementById('operation-status');
+    
+    const newGuid = displayElement.textContent.trim();
+    const description = descriptionInput.value.trim() || `随机生成 ${new Date().toLocaleString()}`;
+    
+    if (!validateGuidFormat(newGuid)) {
+        statusElement.innerHTML = '<span style="color: #f85149;">❌ 无效的 GUID 格式</span>';
+        return;
+    }
+    
+    if (!confirm(`确定要将 MachineGuid 替换为随机生成的:\n${newGuid}\n\n此操作将自动备份当前机器码！`)) {
+        return;
+    }
+    
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '替换中...';
+    statusElement.textContent = '正在备份并替换...';
+    statusElement.style.color = '#58a6ff';
+    
+    try {
+        if (window.__TAURI__) {
+            const { invoke } = window.__TAURI__.core;
+            const result = await invoke('generate_random_guid_command', { 
+                description: description
+            });
+            displayRandomGenerateResult(result);
+        } else {
+            const mockResult = {
+                success: true,
+                backup: {
+                    id: `backup_${Date.now()}`,
+                    guid: document.getElementById('machine-guid').textContent,
+                    source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                    timestamp: Date.now() / 1000,
+                    description: `备份原机器码: ${document.getElementById('machine-guid').textContent}`
+                },
+                new_guid: newGuid,
+                message: `成功生成并替换 MachineGuid: ${newGuid}`,
+                error: null
+            };
+            
+            document.getElementById('machine-guid').textContent = newGuid;
+            backupsData.unshift(mockResult.backup);
+            displayRandomGenerateResult(mockResult);
+        }
+        
+        closeRandomGenerateModal();
+        await loadBackups();
+        await readMachineId();
+    } catch (error) {
+        console.error('随机生成替换失败:', error);
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${error}</span>`;
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '确认替换';
+    }
+}
+
+function displayRandomGenerateResult(result) {
+    const statusElement = document.getElementById('operation-status');
+    
+    if (result.success) {
+        statusElement.innerHTML = `<span style="color: #3fb950;">✅ ${result.message}</span>`;
+        console.log('✅ 随机生成成功:', result.message);
+        if (result.backup) {
+            console.log('📦 备份信息:', result.backup);
+        }
+    } else {
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ 随机生成失败: ${result.error}</span>`;
+        console.error('❌ 随机生成失败:', result.error);
     }
 }
 

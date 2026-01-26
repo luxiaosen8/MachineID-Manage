@@ -73,6 +73,26 @@
         </div>
     </div>
     
+    <div id="random-generate-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-random-modal">&times;</span>
+            <h2>随机生成 MachineGuid</h2>
+            <p class="modal-warning">⚠️ 生成前将自动备份当前机器码</p>
+            <div class="form-group">
+                <label>生成的 MachineGuid</label>
+                <div id="generated-guid-display" class="guid-display">-</div>
+            </div>
+            <div class="form-group">
+                <label for="random-description-input">描述 (可选)</label>
+                <input type="text" id="random-description-input" placeholder="随机生成的新机器码">
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-random-btn" class="cancel-btn">取消</button>
+                <button id="confirm-random-btn" class="danger-btn">确认替换</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>

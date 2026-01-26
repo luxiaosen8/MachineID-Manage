@@ -1,0 +1,32 @@
+{
+  "backups": [
+    {
+      "id": "backup_1769463376570",
+      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
+      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+      "timestamp": 1769463376,
+      "description": "备份2"
+    },
+    {
+      "id": "backup_1769463305814",
+      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
+      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+      "timestamp": 1769463305,
+      "description": "备份2"
+    },
+    {
+      "id": "backup_1769463305808",
+      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
+      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+      "timestamp": 1769463305,
+      "description": "备份2"
+    },
+    {
+      "id": "backup_1769463305807",
+      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
+      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+      "timestamp": 1769463305,
+      "description": "测试备份"
+    }
+  ]
+}

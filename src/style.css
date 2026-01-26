@@ -368,3 +368,14 @@ footer {
     background: #8b949e;
     cursor: not-allowed;
 }
+
+.guid-display {
+    background: #0d1117;
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 1rem;
+    color: #8250df;
+    word-break: break-all;
+    border: 1px dashed rgba(130, 80, 223, 0.3);
+}
