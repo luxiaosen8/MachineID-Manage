@@ -1,0 +1,17 @@
+[build]
+rustflags = ["-C", "target-cpu=x86-64-v3"]
+
+[net]
+git-fetch-with-cli = true
+
+[http]
+check-revoke = false
+
+[sections]
+crates-io = { replace-with = "ustc" }
+
+[registries.crates-io]
+protocol = "sparse"
+
+[source.ustc]
+registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"

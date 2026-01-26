@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MachineID-Manage</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>MachineID-Manage</h1>
+            <p class="subtitle">Windows 机器码管理器</p>
+        </header>
+        
+        <main>
+            <section class="current-id">
+                <h2>当前 MachineGuid</h2>
+                <div class="id-display">
+                    <code id="machine-guid">加载中...</code>
+                </div>
+                <button id="read-btn">读取机器码</button>
+            </section>
+            
+            <section class="actions">
+                <h2>管理操作</h2>
+                <div class="button-group">
+                    <button id="backup-btn">备份机器码</button>
+                    <button id="restore-btn">恢复机器码</button>
+                    <button id="generate-btn">随机生成</button>
+                    <button id="replace-btn">自定义替换</button>
+                </div>
+            </section>
+            
+            <section class="history">
+                <h2>操作历史</h2>
+                <ul id="history-list">
+                    <!-- 动态填充 -->
+                </ul>
+            </section>
+        </main>
+        
+        <footer>
+            <p class="warning">⚠️ 修改注册表前请备份您的数据</p>
+            <p class="version">版本 0.1.0</p>
+        </footer>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
