@@ -11,13 +11,13 @@ license.workspace = true
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["..."] }
-tauri-shell = "2"
+tauri = "2"
 winreg = "0.50"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
+regex = "1.10"
 
 [features]
 default = ["custom-protocol"]
