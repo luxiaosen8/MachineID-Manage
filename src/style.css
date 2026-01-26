@@ -104,11 +104,6 @@ button:disabled {
     color: white;
 }
 
-#restore-btn {
-    background: #9a6700;
-    color: white;
-}
-
 #generate-btn {
     background: #8250df;
     color: white;
@@ -169,18 +164,30 @@ button:disabled {
 }
 
 .backup-actions button {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem;
     font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
 }
 
-.restore-backup-btn {
+.copy-backup-btn {
     background: #238636 !important;
     color: white;
+}
+
+.copy-backup-btn:hover {
+    background: #2ea043 !important;
 }
 
 .delete-backup-btn {
     background: #cf222e !important;
     color: white;
+}
+
+.delete-backup-btn:hover {
+    background: #da3633 !important;
 }
 
 .status {

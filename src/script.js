@@ -35,10 +35,6 @@ function initializeEventListeners() {
         await backupMachineGuid();
     });
     
-    document.getElementById('restore-btn')?.addEventListener('click', async () => {
-        await restoreMachineGuid();
-    });
-    
     document.getElementById('generate-btn')?.addEventListener('click', () => {
         console.log('生成按钮点击 - 功能开发中');
     });
@@ -194,17 +190,22 @@ function displayBackupList(result) {
                         <div class="backup-meta">${date} - ${backup.description || '无描述'}</div>
                     </div>
                     <div class="backup-actions">
-                        <button class="restore-backup-btn" data-id="${backup.id}" data-guid="${backup.guid}">恢复</button>
-                        <button class="delete-backup-btn" data-id="${backup.id}">删除</button>
+                        <button class="copy-backup-btn" data-guid="${backup.guid}" title="复制机器码">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                        <button class="delete-backup-btn" data-id="${backup.id}" title="删除备份">删除</button>
                     </div>
                 </div>
             `;
         }).join('');
         
-        listElement.querySelectorAll('.restore-backup-btn').forEach(btn => {
+        listElement.querySelectorAll('.copy-backup-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const guid = e.target.dataset.guid;
-                confirmRestore(guid);
+                const guid = e.currentTarget.dataset.guid;
+                copyToClipboard(guid);
             });
         });
         
@@ -219,23 +220,32 @@ function displayBackupList(result) {
     }
 }
 
-async function restoreMachineGuid() {
-    const selectedBackup = document.querySelector('.backup-item.selected');
-    if (!selectedBackup) {
-        const statusElement = document.getElementById('operation-status');
-        statusElement.innerHTML = '<span style="color: #f85149;">请先选择一个备份</span>';
-        return;
-    }
+async function copyToClipboard(text) {
+    const statusElement = document.getElementById('operation-status');
     
-    const guid = selectedBackup.dataset.guid;
-    confirmRestore(guid);
-}
-
-function confirmRestore(guid) {
-    if (confirm(`确定要恢复到以下 MachineGuid 吗？\n${guid}\n\n⚠️ 此操作将修改注册表，请确保已备份当前数据！`)) {
-        const statusElement = document.getElementById('operation-status');
-        statusElement.innerHTML = `<span style="color: #f85149;">恢复功能开发中... 目标: ${guid}</span>`;
-        console.log('恢复目标:', guid);
+    try {
+        if (navigator.clipboard && window.__TAURI__) {
+            await navigator.clipboard.writeText(text);
+            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 已复制到剪贴板</span>';
+        } else if (window.__TAURI__) {
+            const { writeText } = window.__TAURI__.clipboard;
+            await writeText(text);
+            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 已复制到剪贴板</span>';
+        } else {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 已复制到剪贴板</span>';
+        }
+        console.log('✅ 已复制到剪贴板:', text);
+    } catch (error) {
+        console.error('复制失败:', error);
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ 复制失败: ${error}</span>`;
     }
 }
 
