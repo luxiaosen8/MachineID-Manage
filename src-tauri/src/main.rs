@@ -1,20 +1,35 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use crate::machine_id::read_machine_guid;
+use crate::machine_id::{read_machine_guid, backup_current_machine_guid, delete_backup, MachineIdBackup};
+use crate::machine_id::list_backups as machine_id_list_backups;
+use crate::machine_id::clear_all_backups as machine_id_clear_all_backups;
+use crate::machine_id::get_backup_count as machine_id_get_backup_count;
 
 mod machine_id;
 
-/// Tauri 命令：读取 MachineGuid
-/// 
-/// 从 Windows 注册表读取机器码
-/// 
-/// # Returns
-/// 
-/// 返回 JSON 对象，包含:
-/// - success: 是否成功
-/// - guid: MachineGuid 值
-/// - source: 注册表路径
-/// - error: 错误信息（如果失败）
+#[derive(serde::Serialize)]
+struct MachineIdResponse {
+    success: bool,
+    guid: String,
+    source: String,
+    error: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+struct BackupResponse {
+    success: bool,
+    backup: Option<MachineIdBackup>,
+    error: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+struct BackupListResponse {
+    success: bool,
+    backups: Vec<MachineIdBackup>,
+    count: usize,
+    error: Option<String>,
+}
+
 #[tauri::command]
 fn read_machine_id() -> Result<MachineIdResponse, String> {
     match read_machine_guid() {
@@ -33,12 +48,92 @@ fn read_machine_id() -> Result<MachineIdResponse, String> {
     }
 }
 
-/// 读取机器码响应结构
+#[tauri::command]
+fn backup_machine_guid(description: Option<String>) -> Result<BackupResponse, String> {
+    match backup_current_machine_guid(description) {
+        Ok(backup) => Ok(BackupResponse {
+            success: true,
+            backup: Some(backup),
+            error: None,
+        }),
+        Err(e) => Ok(BackupResponse {
+            success: false,
+            backup: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+fn list_backups() -> Result<BackupListResponse, String> {
+    match machine_id_list_backups() {
+        Ok(backups) => Ok(BackupListResponse {
+            success: true,
+            backups: backups.clone(),
+            count: backups.len(),
+            error: None,
+        }),
+        Err(e) => Ok(BackupListResponse {
+            success: false,
+            backups: Vec::new(),
+            count: 0,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+fn delete_backup_by_id(id: String) -> Result<BackupResponse, String> {
+    match delete_backup(&id) {
+        Ok(_) => Ok(BackupResponse {
+            success: true,
+            backup: None,
+            error: None,
+        }),
+        Err(e) => Ok(BackupResponse {
+            success: false,
+            backup: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+fn clear_all_backups() -> Result<BackupResponse, String> {
+    match machine_id_clear_all_backups() {
+        Ok(_) => Ok(BackupResponse {
+            success: true,
+            backup: None,
+            error: None,
+        }),
+        Err(e) => Ok(BackupResponse {
+            success: false,
+            backup: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+fn get_backup_count() -> Result<BackupCountResponse, String> {
+    match machine_id_get_backup_count() {
+        Ok(count) => Ok(BackupCountResponse {
+            success: true,
+            count,
+            error: None,
+        }),
+        Err(e) => Ok(BackupCountResponse {
+            success: false,
+            count: 0,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
 #[derive(serde::Serialize)]
-struct MachineIdResponse {
+struct BackupCountResponse {
     success: bool,
-    guid: String,
-    source: String,
+    count: usize,
     error: Option<String>,
 }
 
@@ -49,7 +144,15 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, read_machine_id])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            read_machine_id,
+            backup_machine_guid,
+            list_backups,
+            delete_backup_by_id,
+            clear_all_backups,
+            get_backup_count
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
