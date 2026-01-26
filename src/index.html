@@ -52,6 +52,27 @@
         </footer>
     </div>
     
+    <div id="custom-replace-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <h2>自定义替换 MachineGuid</h2>
+            <p class="modal-warning">⚠️ 替换前将自动备份当前机器码</p>
+            <div class="form-group">
+                <label for="custom-guid-input">新的 MachineGuid</label>
+                <input type="text" id="custom-guid-input" placeholder="550E8400-E29B-41D4-A716-446655440000" maxlength="36">
+                <p class="input-hint">格式: 550E8400-E29B-41D4-A716-446655440000</p>
+            </div>
+            <div class="form-group">
+                <label for="custom-description-input">描述 (可选)</label>
+                <input type="text" id="custom-description-input" placeholder="为什么要替换这个机器码">
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-replace-btn" class="cancel-btn">取消</button>
+                <button id="confirm-replace-btn" class="danger-btn">确认替换</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>

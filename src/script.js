@@ -40,8 +40,170 @@ function initializeEventListeners() {
     });
     
     document.getElementById('replace-btn')?.addEventListener('click', () => {
-        console.log('替换按钮点击 - 功能开发中');
+        openCustomReplaceModal();
     });
+    
+    document.getElementById('close-modal')?.addEventListener('click', () => {
+        closeCustomReplaceModal();
+    });
+    
+    document.getElementById('cancel-replace-btn')?.addEventListener('click', () => {
+        closeCustomReplaceModal();
+    });
+    
+    document.getElementById('confirm-replace-btn')?.addEventListener('click', async () => {
+        await confirmCustomReplace();
+    });
+    
+    document.getElementById('custom-guid-input')?.addEventListener('input', (e) => {
+        validateGuidInput(e.target.value);
+    });
+    
+    document.getElementById('custom-guid-input')?.addEventListener('paste', (e) => {
+        setTimeout(() => {
+            const value = e.target.value;
+            validateGuidInput(value);
+        }, 0);
+    });
+    
+    document.querySelector('.modal')?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            closeCustomReplaceModal();
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeCustomReplaceModal();
+        }
+    });
+}
+
+function openCustomReplaceModal() {
+    const modal = document.getElementById('custom-replace-modal');
+    const input = document.getElementById('custom-guid-input');
+    const descriptionInput = document.getElementById('custom-description-input');
+    const confirmBtn = document.getElementById('confirm-replace-btn');
+    
+    input.value = '';
+    descriptionInput.value = '';
+    input.classList.remove('invalid');
+    confirmBtn.disabled = true;
+    
+    modal.classList.add('show');
+    input.focus();
+}
+
+function closeCustomReplaceModal() {
+    const modal = document.getElementById('custom-replace-modal');
+    modal.classList.remove('show');
+}
+
+function validateGuidInput(value) {
+    const input = document.getElementById('custom-guid-input');
+    const confirmBtn = document.getElementById('confirm-replace-btn');
+    const hint = input.parentElement.querySelector('.input-hint');
+    
+    const guidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    
+    if (value.length === 0) {
+        input.classList.remove('invalid');
+        confirmBtn.disabled = true;
+        hint.textContent = '格式: 550E8400-E29B-41D4-A716-446655440000';
+        hint.style.color = '#888';
+    } else if (guidPattern.test(value)) {
+        input.classList.remove('invalid');
+        confirmBtn.disabled = false;
+        hint.textContent = '✅ 格式正确';
+        hint.style.color = '#3fb950';
+    } else {
+        input.classList.add('invalid');
+        confirmBtn.disabled = true;
+        hint.textContent = '❌ 格式无效，请输入有效的 GUID 格式';
+        hint.style.color = '#f85149';
+    }
+}
+
+async function confirmCustomReplace() {
+    const input = document.getElementById('custom-guid-input');
+    const descriptionInput = document.getElementById('custom-description-input');
+    const confirmBtn = document.getElementById('confirm-replace-btn');
+    const statusElement = document.getElementById('operation-status');
+    
+    const newGuid = input.value.trim();
+    const description = descriptionInput.value.trim() || `自定义替换 ${new Date().toLocaleString()}`;
+    
+    if (!validateGuidFormat(newGuid)) {
+        statusElement.innerHTML = '<span style="color: #f85149;">❌ 无效的 GUID 格式</span>';
+        return;
+    }
+    
+    if (!confirm(`确定要将 MachineGuid 替换为:\n${newGuid}\n\n此操作将自动备份当前机器码！`)) {
+        return;
+    }
+    
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '替换中...';
+    statusElement.textContent = '正在备份并替换...';
+    statusElement.style.color = '#58a6ff';
+    
+    try {
+        if (window.__TAURI__) {
+            const { invoke } = window.__TAURI__.core;
+            const result = await invoke('write_machine_guid_command', { 
+                newGuid: newGuid,
+                description: description
+            });
+            displayReplaceResult(result);
+        } else {
+            const mockResult = {
+                success: true,
+                backup: {
+                    id: `backup_${Date.now()}`,
+                    guid: document.getElementById('machine-guid').textContent,
+                    source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                    timestamp: Date.now() / 1000,
+                    description: `备份原机器码: ${document.getElementById('machine-guid').textContent}`
+                },
+                message: `成功将 MachineGuid 替换为: ${newGuid}`,
+                error: null
+            };
+            
+            document.getElementById('machine-guid').textContent = newGuid;
+            backupsData.unshift(mockResult.backup);
+            displayReplaceResult(mockResult);
+        }
+        
+        closeCustomReplaceModal();
+        await loadBackups();
+        await readMachineId();
+    } catch (error) {
+        console.error('替换失败:', error);
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${error}</span>`;
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '确认替换';
+    }
+}
+
+function validateGuidFormat(guid) {
+    const guidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    return guidPattern.test(guid);
+}
+
+function displayReplaceResult(result) {
+    const statusElement = document.getElementById('operation-status');
+    
+    if (result.success) {
+        statusElement.innerHTML = `<span style="color: #3fb950;">✅ ${result.message}</span>`;
+        console.log('✅ 替换成功:', result.message);
+        if (result.backup) {
+            console.log('📦 备份信息:', result.backup);
+        }
+    } else {
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${result.error}</span>`;
+        console.error('❌ 替换失败:', result.error);
+    }
 }
 
 async function readMachineId() {

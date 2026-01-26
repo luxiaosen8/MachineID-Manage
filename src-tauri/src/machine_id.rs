@@ -11,6 +11,8 @@ use winreg::RegKey;
 pub enum BackupError {
     #[error("注册表读取失败: {0}")]
     RegistryError(String),
+    #[error("注册表写入失败: {0}")]
+    RegistryWriteError(String),
     #[error("MachineGuid 值不存在")]
     NotFound,
     #[error("MachineGuid 值解析失败: {0}")]
@@ -21,6 +23,8 @@ pub enum BackupError {
     BackupNotFound(String),
     #[error("无效的备份ID")]
     InvalidBackupId,
+    #[error("无效的 GUID 格式: {0}")]
+    InvalidGuidFormat(String),
 }
 
 impl Serialize for BackupError {
@@ -198,9 +202,37 @@ pub fn get_backup_count() -> Result<usize, BackupError> {
          r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
      ).map_err(|e| BackupError::ParseError(e.to_string()))?;
      if !guid_pattern.is_match(guid) {
-         return Err(BackupError::ParseError(format!("无效的 GUID 格式: {}", guid)));
+         return Err(BackupError::InvalidGuidFormat(guid.to_string()));
      }
      Ok(())
+ }
+ 
+ pub fn write_machine_guid(new_guid: &str, description: Option<String>) -> Result<MachineIdBackup, BackupError> {
+     validate_guid_format(new_guid)?;
+     
+     backup_current_machine_guid(description)?;
+     
+     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
+     let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+     let crypt_key = hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
+         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
+     
+     crypt_key.set_value("MachineGuid", &new_guid)
+         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
+     
+     backup_current_machine_guid(Some(format!("替换后自动备份: {}", new_guid)))?;
+     
+     let machine_id = read_machine_guid()?;
+     Ok(MachineIdBackup {
+         id: generate_backup_id(),
+         guid: machine_id.guid,
+         source: machine_id.source,
+         timestamp: SystemTime::now()
+             .duration_since(UNIX_EPOCH)
+             .unwrap()
+             .as_secs(),
+         description: Some(format!("自定义替换: {}", new_guid)),
+     })
  }
  
  pub fn read_machine_guid_bytes() -> Result<String, BackupError> {
@@ -397,5 +429,91 @@ mod tests {
             assert_eq!(bytes.len(), 32);
             assert!(bytes.chars().all(|c| c.is_ascii_hexdigit()));
         }
+    }
+
+    #[test]
+    fn test_validate_guid_format_valid() {
+        let valid_guids = vec![
+            "550E8400-E29B-41D4-A716-446655440000",
+            "12345678-1234-1234-1234-123456789012",
+            "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+            "00000000-0000-0000-0000-000000000000",
+        ];
+        for guid in valid_guids {
+            let result = validate_guid_format(guid);
+            assert!(result.is_ok(), "应该验证通过: {}", guid);
+        }
+    }
+
+    #[test]
+    fn test_validate_guid_format_invalid() {
+        let invalid_guids = vec![
+            "invalid-guid",
+            "550E8400-E29B-41D4-A716",
+            "550E8400E29B41D4A716446655440000",
+            "550E8400-E29B-41D4-A716-44665544000", // 少一位
+            "550E8400-E29B-41D4-A716-4466554400000", // 多一位
+            "550E8400-E29B-41D4-A716-44665544000g", // 包含非法字符
+            "",
+            "not-a-guid",
+        ];
+        for guid in invalid_guids {
+            let result = validate_guid_format(guid);
+            assert!(result.is_err(), "应该验证失败: {}", guid);
+        }
+    }
+
+    #[test]
+    fn test_write_machine_guid_with_auto_backup() {
+        if !cfg!(target_os = "windows") {
+            return;
+        }
+
+        with_temp_backup_dir(|_temp_dir| {
+            let original_guid = read_machine_guid().unwrap();
+            let test_guid = "550E8400-E29B-41D4-A716-446655440000";
+
+            let result = write_machine_guid(test_guid, Some("自动备份测试".to_string()));
+
+            if let Err(BackupError::RegistryWriteError(_)) = result {
+                println!("⚠️ 跳过注册表写入测试: 需要管理员权限");
+                return;
+            }
+
+            assert!(result.is_ok(), "写入应该成功: {:?}", result.err());
+
+            let new_guid = read_machine_guid().unwrap();
+            assert_eq!(new_guid.guid, test_guid);
+
+            let backups = list_backups().unwrap();
+            assert!(!backups.is_empty());
+            assert_eq!(backups.first().unwrap().guid, original_guid.guid);
+
+            let restore_result = write_machine_guid(&original_guid.guid, None);
+            assert!(restore_result.is_ok());
+
+            let restored_guid = read_machine_guid().unwrap();
+            assert_eq!(restored_guid.guid, original_guid.guid);
+        });
+    }
+
+    #[test]
+    fn test_write_machine_guid_invalid_format() {
+        if !cfg!(target_os = "windows") {
+            return;
+        }
+
+        with_temp_backup_dir(|_temp_dir| {
+            let invalid_guids = vec![
+                "invalid-guid",
+                "550E8400-E29B-41D4-A716",
+                "550E8400E29B41D4A716446655440000",
+            ];
+
+            for invalid_guid in invalid_guids {
+                let result = write_machine_guid(invalid_guid, None);
+                assert!(result.is_err(), "应该拒绝无效格式: {}", invalid_guid);
+            }
+        });
     }
 }

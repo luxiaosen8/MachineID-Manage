@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use crate::machine_id::{read_machine_guid, backup_current_machine_guid, delete_backup, MachineIdBackup};
+use crate::machine_id::{read_machine_guid, backup_current_machine_guid, delete_backup, MachineIdBackup, write_machine_guid};
 use crate::machine_id::list_backups as machine_id_list_backups;
 use crate::machine_id::clear_all_backups as machine_id_clear_all_backups;
 use crate::machine_id::get_backup_count as machine_id_get_backup_count;
@@ -137,6 +137,32 @@ struct BackupCountResponse {
     error: Option<String>,
 }
 
+#[derive(serde::Serialize)]
+struct WriteGuidResponse {
+    success: bool,
+    backup: Option<MachineIdBackup>,
+    message: String,
+    error: Option<String>,
+}
+
+#[tauri::command]
+fn write_machine_guid_command(new_guid: String, description: Option<String>) -> Result<WriteGuidResponse, String> {
+    match write_machine_guid(&new_guid, description) {
+        Ok(backup) => Ok(WriteGuidResponse {
+            success: true,
+            backup: Some(backup),
+            message: format!("成功将 MachineGuid 替换为: {}", new_guid),
+            error: None,
+        }),
+        Err(e) => Ok(WriteGuidResponse {
+            success: false,
+            backup: None,
+            message: String::new(),
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! This is MachineID-Manage.", name)
@@ -151,7 +177,8 @@ fn main() {
             list_backups,
             delete_backup_by_id,
             clear_all_backups,
-            get_backup_count
+            get_backup_count,
+            write_machine_guid_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
