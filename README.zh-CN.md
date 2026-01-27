@@ -12,6 +12,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2-blue.svg)](https://tauri.app/)
 [![Windows](https://img.shields.io/badge/Windows-10/11-blue.svg)]()
+[![Release](https://img.shields.io/github/v/release/luxiaosen8/MachineID-Manage)](https://github.com/luxiaosen8/MachineID-Manage/releases)
 
 </div>
 
@@ -22,6 +23,19 @@
 MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码管理工具。它使能够读取、备份、替换和随机生成 Windows MachineGuid（机器码标识符）。该应用程序提供友好的图形界面，帮助用户安全高效地执行系统注册表操作。
 
 本项目**全程由 AI 开发**，无法保证功能性完善及无 BUG。项目已在 **Windows 11** 下测试有效，其他系统版本请自行测试。
+
+---
+
+## 下载
+
+### 最新版本 (v1.4.0)
+
+| 平台 | 安装版 | 免安装版(便携版) |
+|------|--------|------------------|
+| Windows x64 | [MachineID-Manage_1.4.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_1.4.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_1.4.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+
+> **注意**: 所有下载均可在 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 页面获取。
 
 ---
 
@@ -49,8 +63,19 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码�
 | Node.js | 18+（用于开发） |
 | 管理员权限 | 修改注册表时需要 |
 
-### 安装与运行
+### 安装方法
 
+#### 方式一：安装版（推荐）
+1. 从 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 下载最新的 `.msi` 或 `.exe` 安装程序
+2. 运行安装程序并按照向导完成安装
+3. 从开始菜单启动 MachineID-Manage
+
+#### 方式二：便携版（免安装）
+1. 从 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 下载 `MachineID-Manage_*_windows_portable.zip`
+2. 将 ZIP 文件解压到您想要的位置
+3. 直接运行 `machineid-manage.exe`
+
+#### 方式三：从源码构建
 ```bash
 # 克隆仓库
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
@@ -66,7 +91,7 @@ cargo tauri dev
 cargo tauri build
 ```
 
-### 操作说明
+### 使用说明
 
 1. **读取机器码** - 点击"读取机器码"按钮获取当前 MachineGuid
 2. **备份机器码** - 点击"备份"保存当前机器码到本地存储
@@ -135,6 +160,20 @@ MachineID-Manage/
 
 ---
 
+## 更新日志
+
+### v1.4.0 (2026-01-28)
+- 修复 Tauri v2 的 GitHub Actions 工作流
+- 版本更新至 1.4.0
+- 改进 CI/CD 流程
+
+### v1.3.7 (上一版本)
+- 初始稳定版本
+- 基础机器码管理功能
+- 备份和恢复功能
+
+---
+
 ## 贡献
 
 欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
@@ -151,6 +190,7 @@ MachineID-Manage/
 
 - **GitHub**: [https://github.com/luxiaosen8/MachineID-Manage](https://github.com/luxiaosen8/MachineID-Manage)
 - **Issues**: [https://github.com/luxiaosen8/MachineID-Manage/issues](https://github.com/luxiaosen8/MachineID-Manage/issues)
+- **Releases**: [https://github.com/luxiaosen8/MachineID-Manage/releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
 
 ---
 

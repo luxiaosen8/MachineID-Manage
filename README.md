@@ -1,4 +1,4 @@
-﻿# MachineID-Manage
+# MachineID-Manage
 
 <div align="center">
 
@@ -12,6 +12,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2-blue.svg)](https://tauri.app/)
 [![Windows](https://img.shields.io/badge/Windows-10/11-blue.svg)]()
+[![Release](https://img.shields.io/github/v/release/luxiaosen8/MachineID-Manage)](https://github.com/luxiaosen8/MachineID-Manage/releases)
 
 </div>
 
@@ -22,6 +23,19 @@
 MachineID-Manage is a Windows MachineGuid management tool developed using **Rust + Tauri 2**. It enables users to read, backup, replace, and randomly generate Windows MachineGuid identifiers. The application provides a user-friendly graphical interface for performing system registry operations safely and efficiently.
 
 This project was entirely developed by **AI** and cannot guarantee complete functionality or freedom from bugs. Testing has been primarily conducted on **Windows 11**, and compatibility with other Windows versions is not guaranteed.
+
+---
+
+## Download
+
+### Latest Release (v1.4.0)
+
+| Platform | Installer | Portable |
+|----------|-----------|----------|
+| Windows x64 | [MachineID-Manage_1.4.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_1.4.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_1.4.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+
+> **Note**: All downloads are available on the [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) page.
 
 ---
 
@@ -51,6 +65,17 @@ This project was entirely developed by **AI** and cannot guarantee complete func
 
 ### Installation
 
+#### Option 1: Installer (Recommended)
+1. Download the latest `.msi` or `.exe` installer from [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
+2. Run the installer and follow the setup wizard
+3. Launch MachineID-Manage from the Start Menu
+
+#### Option 2: Portable Version
+1. Download the `MachineID-Manage_*_windows_portable.zip` from [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
+2. Extract the ZIP file to your desired location
+3. Run `machineid-manage.exe` directly
+
+#### Option 3: Build from Source
 ```bash
 # Clone the repository
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
@@ -135,6 +160,20 @@ MachineID-Manage/
 
 ---
 
+## Changelog
+
+### v1.4.0 (2026-01-28)
+- Fixed GitHub Actions workflow for Tauri v2
+- Updated version to 1.4.0
+- Improved CI/CD pipeline
+
+### v1.3.7 (Previous)
+- Initial stable release
+- Basic MachineGuid management features
+- Backup and restore functionality
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
@@ -151,6 +190,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 - **GitHub**: [https://github.com/luxiaosen8/MachineID-Manage](https://github.com/luxiaosen8/MachineID-Manage)
 - **Issues**: [https://github.com/luxiaosen8/MachineID-Manage/issues](https://github.com/luxiaosen8/MachineID-Manage/issues)
+- **Releases**: [https://github.com/luxiaosen8/MachineID-Manage/releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
 
 ---
 
