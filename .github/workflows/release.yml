@@ -2,64 +2,156 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.3.0)'
+        required: true
+        default: ''
+
+permissions:
+  contents: write
 
 jobs:
-  publish:
-    permissions:
-      contents: write
+  build:
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            args: --bundles dmg,zip
-          - platform: ubuntu-22.04
-            args: --bundles deb,appimage
-          - platform: windows-latest
-            args: --bundles msi,zip
+          - os: windows-latest
+            artifact-name: windows
+            ext: msi
+          - os: ubuntu-latest
+            artifact-name: linux
+            ext: deb
+          - os: macos-latest
+            artifact-name: macos
+            ext: dmg
 
-    runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: install Rust
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || (matrix.os == 'windows-latest' && 'x86_64-pc-windows-gnu' || 'x86_64-unknown-linux-gnu') }}
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev javascriptcoregtk-4.1
+          sudo apt-get install -y webkit2gtk-4.1 libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev librsvg2-dev libsqlite3-dev
 
-      - name: install tauri-cli
-        run: cargo install tauri-cli --version "^2.0.0"
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install webkit2gtk sqlite3 librsvg
 
-      - name: Build and Release
-        uses: tauri-apps/tauri-action@v0
+      - name: Build with Tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd src-tauri
+          cargo tauri build --verbose
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v1.2.4-beta-{0}', github.sha) }}
-          releaseName: "MachineID-Manage ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.4-beta' }}"
-          releaseBody: |
-            # MachineID-Manage Release
+          name: ${{ matrix.artifact-name }}
+          path: src-tauri/target/release/bundle/
+          if-no-files-found: error
 
-            ## About / 关于
-            MachineID-Manage is a Windows MachineGuid management tool built with Rust + Tauri 2.
-            MachineID-Manage 是一款基于 Rust + Tauri 2 开发的 Windows 机器码管理工具。
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            ## What's New | 本次更新
-            - ✨ Multi-language Support (en/zh-CN) | 多语言支持
-            - 🚀 Fixed Tauri 2 CLI arguments (--bundles) | 修复 Tauri 2 命令行参数
-            - 🐛 Improved multi-platform compatibility | 提升多平台兼容性
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: release-artifacts
 
-            ---
-            View full documentation: https://github.com/luxiaosen8/MachineID-Manage
-          releaseDraft: false
-          prerelease: ${{ github.ref_type != 'tag' }}
-          args: ${{ matrix.args }}
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux
+          path: release-artifacts
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos
+          path: release-artifacts
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/**
+          name: MachineID-Manage v${{ steps.version.outputs.version }}
+          body: |
+            ## MachineID-Manage v${{ steps.version.outputs.version }}
+
+            ### Downloads
+
+            #### Windows
+            - MSI Installer
+
+            #### Linux
+            - DEB Package
+
+            #### macOS
+            - DMG Installer
+
+            ### Portable Versions (Windows)
+            - `machineid-manage.exe` - Portable version (no installation required)
+
+            ### Installation Notes
+
+            1. **Windows**: Run the MSI installer or use the portable version
+            2. **Linux**: Install via DEB package
+            3. **macOS**: Open DMG and drag to Applications
+
+            ### Usage Guide
+
+            1. **Read MachineGuid**: View current MachineGuid from registry
+            2. **Backup**: Save current machine ID
+            3. **Restore**: Restore from backup
+            4. **Random Generate**: Generate new random GUID
+            5. **Custom Replace**: Replace with custom GUID
+
+            ### Security
+
+            > ⚠️ Always backup before modifying registry!
+            >
+            > - Administrator rights required for modifications
+            > - Automatic backup before changes
+            > - GUID format validation
+
+            ### Source Code
+
+            [View on GitHub](https://github.com/luxiaosen8/MachineID-Manage)
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
