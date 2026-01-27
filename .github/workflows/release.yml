@@ -4,14 +4,20 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.4.0)'
+        required: true
+        default: 'v1.4.0'
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  # Windows Build
+  release-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +48,9 @@ jobs:
       - name: Create portable package (Windows)
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
+          if ([string]::IsNullOrEmpty($version)) {
+            $version = "${{ github.event.inputs.version }}".TrimStart('v')
+          }
           $srcDir = "src-tauri/target/release/bundle"
           $outDir = "release-output"
           New-Item -ItemType Directory -Force -Path $outDir
@@ -55,6 +64,7 @@ jobs:
             exit 1
           }
 
+          # Create portable ZIP
           Compress-Archive -Path "$outDir/*" -DestinationPath "$outDir/MachineID-Manage_${version}_windows_portable.zip" -Force
 
           Get-ChildItem -Path $outDir
@@ -66,14 +76,162 @@ jobs:
           path: release-output/
           retention-days: 1
 
-      - name: Create Release Draft
-        uses: softprops/action-gh-release@v2
+      - name: Upload Windows Release Assets
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           files: |
             release-output/*.msi
             release-output/*.exe
-            release-output/*.zip
+            release-output/*_portable.zip
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
           draft: true
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # macOS Build
+  release-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: x86_64-apple-darwin
+
+      - name: Install dependencies
+        run: |
+          rustup default stable
+          cargo install tauri-cli --locked --version "^2"
+
+      - name: Build with Tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo tauri build --verbose
+        continue-on-error: true
+
+      - name: List build artifacts
+        run: |
+          ls -la src-tauri/target/release/bundle/ || echo "Bundle directory not found"
+          find src-tauri/target/release -name "*.dmg" -o -name "*.app" || echo "No macOS artifacts found"
+        continue-on-error: true
+
+      - name: Create portable package (macOS)
+        run: |
+          version="${{ github.ref_name }}"
+          version="${version#v}"
+          if [ -z "$version" ]; then
+            version="${{ github.event.inputs.version }}"
+            version="${version#v}"
+          fi
+          
+          srcDir="src-tauri/target/release/bundle"
+          outDir="release-output"
+          mkdir -p "$outDir"
+
+          if [ -d "$srcDir" ]; then
+            find "$srcDir" -name "*.dmg" -exec cp {} "$outDir/" \;
+            find "$srcDir" -name "*.app" -exec cp -R {} "$outDir/" \;
+          else
+            echo "Build bundle directory not found at $srcDir"
+          fi
+
+          ls -la "$outDir"
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: machineid-manage-macos
+          path: release-output/
+          retention-days: 1
+        continue-on-error: true
+
+      - name: Upload macOS Release Assets
+        uses: softprops/action-gh-release@v1
+        if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        with:
+          files: |
+            release-output/*.dmg
+            release-output/*.app
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # Linux Build
+  release-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          rustup default stable
+          cargo install tauri-cli --locked --version "^2"
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Build with Tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo tauri build --verbose
+        continue-on-error: true
+
+      - name: List build artifacts
+        run: |
+          ls -la src-tauri/target/release/bundle/ || echo "Bundle directory not found"
+          find src-tauri/target/release -name "*.AppImage" -o -name "*.deb" || echo "No Linux artifacts found"
+        continue-on-error: true
+
+      - name: Create portable package (Linux)
+        run: |
+          version="${{ github.ref_name }}"
+          version="${version#v}"
+          if [ -z "$version" ]; then
+            version="${{ github.event.inputs.version }}"
+            version="${version#v}"
+          fi
+          
+          srcDir="src-tauri/target/release/bundle"
+          outDir="release-output"
+          mkdir -p "$outDir"
+
+          if [ -d "$srcDir" ]; then
+            find "$srcDir" -name "*.AppImage" -exec cp {} "$outDir/" \;
+            find "$srcDir" -name "*.deb" -exec cp {} "$outDir/" \;
+          else
+            echo "Build bundle directory not found at $srcDir"
+          fi
+
+          ls -la "$outDir"
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: machineid-manage-linux
+          path: release-output/
+          retention-days: 1
+        continue-on-error: true
+
+      - name: Upload Linux Release Assets
+        uses: softprops/action-gh-release@v1
+        if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        with:
+          files: |
+            release-output/*.AppImage
+            release-output/*.deb
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
