@@ -32,18 +32,22 @@ jobs:
         working-directory: src-tauri
         run: cargo tauri build --verbose
 
+      - name: List build artifacts
+        working-directory: src-tauri
+        run: Get-ChildItem -Path target/release/bundle -Recurse
+
       - name: Create portable package (Windows)
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          $arch = "x64"
           $srcDir = "src-tauri/target/release/bundle"
           $outDir = "release-output"
           New-Item -ItemType Directory -Force -Path $outDir
 
-          Copy-Item "$srcDir/msi/MachineID-Manage_${version}_${arch}.msi" -Destination $outDir/
-          Copy-Item "$srcDir/exe/MachineID-Manage_${version}_x64_en-US.exe" -Destination $outDir/
+          Get-ChildItem -Path $srcDir -Recurse -Include *.msi, *.exe, *.zip | ForEach-Object {
+            Copy-Item $_.FullName -Destination "$outDir/"
+          }
 
-          Compress-Archive -Path "$outDir/*" -DestinationPath "release-output/MachineID-Manage_${version}_windows_portable.zip" -Force
+          Compress-Archive -Path "$outDir/*" -DestinationPath "$outDir/MachineID-Manage_${version}_windows_portable.zip" -Force
 
           Get-ChildItem -Path $outDir
 
