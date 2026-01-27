@@ -52,6 +52,30 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码�
 
 ---
 
+## 平台兼容性
+
+### 功能兼容性矩阵
+
+| 功能 | Windows | macOS | Linux | 备注 |
+|:----:|:-------:|:-----:|:-----:|------|
+| 读取机器码 | ✅ | ✅ | ✅ | 全平台支持 |
+| 写入机器码 | ✅ | ❌ | ✅ | macOS 暂不支持写入（系统限制） |
+| 备份功能 | ✅ | ✅ | ✅ | 全平台支持 |
+| 恢复备份 | ✅ | ❌ | ✅ | macOS 暂不支持恢复 |
+| 随机生成 | ✅ | ❌ | ❌ | 仅 Windows 支持 |
+| 权限检查 | ✅ | ✅ | ✅ | 全平台支持 |
+| 管理员重启 | ✅ | ✅ | ✅ | 全平台支持 |
+| 界面渲染 | ✅ | ✅ | ✅ | 全平台支持 |
+| 国际化 | ✅ | ✅ | ✅ | 全平台支持 |
+
+### 平台说明
+
+- **Windows**: 完整功能可用。修改注册表需要管理员权限。
+- **macOS**: 支持读取和备份功能。不支持写入操作，因为 macOS 系统限制了对硬件 UUID 的修改。
+- **Linux**: 支持读取和备份功能。写入操作需要 root 权限。
+
+---
+
 ## 快速开始
 
 ### 系统要求
@@ -75,7 +99,18 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码�
 2. 将 ZIP 文件解压到您想要的位置
 3. 直接运行 `machineid-manage.exe`
 
-#### 方式三：从源码构建
+---
+
+## 开发
+
+### 环境准备
+
+- **Rust** 1.70+ ([安装 Rust](https://rustup.rs/))
+- **Node.js** 18+ ([安装 Node.js](https://nodejs.org/))
+- **Tauri CLI**: `cargo install tauri-cli`
+
+### 项目设置
+
 ```bash
 # 克隆仓库
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
@@ -84,118 +119,100 @@ cd MachineID-Manage
 # 安装依赖
 npm install
 
-# 启动开发服务器
-cargo tauri dev
+# 开发模式运行（需要管理员权限）
+npm run tauri dev
 
 # 构建生产版本
-cargo tauri build
+npm run tauri build
 ```
-
-### 使用说明
-
-1. **读取机器码** - 点击"读取机器码"按钮获取当前 MachineGuid
-2. **备份机器码** - 点击"备份"保存当前机器码到本地存储
-3. **随机生成** - 点击"随机生成"创建新的随机 GUID 并替换
-4. **自定义替换** - 输入有效的 GUID 格式并确认替换
-5. **恢复备份** - 在备份列表中选择备份并点击恢复
 
 ---
 
-## 项目结构
+## 技术架构
+
+### 技术栈
+
+- **后端**: Rust + Tauri 2
+- **前端**: HTML5 + CSS3 + JavaScript (原生)
+- **注册表操作**: winreg (Windows Registry API)
+- **构建工具**: Tauri CLI
+- **包管理器**: npm
+
+### 项目结构
 
 ```
 MachineID-Manage/
-├── src-tauri/                # Tauri 后端 (Rust)
+├── src/                    # 前端源代码
+│   ├── index.html         # 主 HTML 文件
+│   ├── style.css          # 样式表
+│   ├── script.js          # JavaScript 逻辑
+│   └── i18n/              # 国际化
+│       ├── index.js       # i18n 核心
+│       ├── en.json        # 英文翻译
+│       └── zh-CN.json     # 中文翻译
+├── src-tauri/             # Rust 后端
 │   ├── src/
-│   │   ├── main.rs          # Tauri 命令入口
-│   │   └── machine_id.rs    # 机器码读写逻辑
-│   ├── Cargo.toml           # Rust 依赖配置
-│   ├── tauri.conf.json      # Tauri 配置
-│   └── icons/               # 应用图标
-├── src/                     # 前端源码
-│   ├── index.html           # 主页面
-│   ├── style.css            # 样式文件
-│   └── script.js            # 交互逻辑
-├── tests/                   # 测试文件
-├── README.md                # 项目说明（英文）
-├── README.zh-CN.md          # 项目说明（中文）
-├── CONTRIBUTING.md          # 贡献指南
-├── LICENSE                  # MIT 开源协议
-├── .github/
-│   └── workflows/           # GitHub Actions CI/CD
+│   │   ├── main.rs        # 应用入口
+│   │   ├── lib.rs         # 库导出
+│   │   ├── machine_id.rs  # 机器码操作
+│   │   └── commands.rs    # Tauri 命令
+│   ├── Cargo.toml         # Rust 依赖
+│   └── tauri.conf.json    # Tauri 配置
+├── docs/                  # 文档
+└── README.md              # 本文件
 ```
 
 ---
 
-## 技术栈
+## 安全说明
 
-- **Rust** - 系统编程语言
-- **Tauri 2** - 跨平台应用框架
-- **Windows Registry** - 系统注册表操作（winreg crate）
-- **HTML/CSS/JavaScript** - 前端界面
+⚠️ **重要安全提示**
 
----
-
-## 安全注意事项
-
-> **警告**
->
-> 修改 Windows 注册表存在固有风险。执行任何操作前，请务必创建系统备份。
-
-### 安全措施
-
-| 图标 | 措施 | 说明 |
-|:----:|------|------|
-| 🔒 | 权限检测 | 写入操作前检测管理员权限 |
-| 💾 | 自动备份 | 修改前自动备份 |
-| ✅ | 用户确认 | 危险操作需要用户确认 |
-| 📝 | 操作日志 | 记录所有注册表修改操作 |
-| 🔍 | 输入验证 | 写入前验证 GUID 格式 |
-
-### 安全建议
-
-1. **务必备份** - 使用前导出并保存当前 MachineGuid
-2. **先测后用** - 在测试环境验证操作效果
-3. **最小权限** - 仅在需要时授予管理员权限
+- 本工具会修改 Windows 注册表设置。修改前请务必备份。
+- 修改注册表需要管理员权限。
+- 应用程序会对所有 GUID 输入进行验证，防止无效条目。
+- 所有备份数据以 JSON 格式本地存储。
 
 ---
 
-## 更新日志
+## 贡献指南
 
-### v1.4.0 (2026-01-28)
-- 修复 Tauri v2 的 GitHub Actions 工作流
-- 版本更新至 1.4.0
-- 改进 CI/CD 流程
+欢迎提交问题和改进建议！
 
-### v1.3.7 (上一版本)
-- 初始稳定版本
-- 基础机器码管理功能
-- 备份和恢复功能
+### 开发规范
 
----
-
-## 贡献
-
-欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建 Pull Request
 
 ---
 
-## 开源协议
+## 许可证
 
-本项目采用 MIT 协议开源。详情请阅读 [LICENSE](LICENSE) 文件。
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
 
 ---
 
-## 联系方式
+## 致谢
 
-- **GitHub**: [https://github.com/luxiaosen8/MachineID-Manage](https://github.com/luxiaosen8/MachineID-Manage)
-- **Issues**: [https://github.com/luxiaosen8/MachineID-Manage/issues](https://github.com/luxiaosen8/MachineID-Manage/issues)
-- **Releases**: [https://github.com/luxiaosen8/MachineID-Manage/releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
+- [Tauri](https://tauri.app/) - 构建更小、更快、更安全的桌面应用
+- [Rust](https://www.rust-lang.org/) - 一门赋予每个人构建可靠高效软件能力的语言
+- [winreg](https://docs.rs/winreg/) - Rust Windows 注册表访问库
+
+---
+
+## 支持
+
+如有问题或建议，请在 GitHub 上 [提交 Issue](https://github.com/luxiaosen8/MachineID-Manage/issues)。
 
 ---
 
 <div align="center">
 
-**感谢使用 MachineID-Manage！**
+**[⬆ 返回顶部](#机器码管理器--machineid-manage)**
+
+用 ❤️ 和 AI 制作
 
 </div>
