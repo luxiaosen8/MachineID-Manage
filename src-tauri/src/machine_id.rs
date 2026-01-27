@@ -792,7 +792,7 @@ mod tests {
 
             let result1 = backup_current_machine_guid(Some("第一次备份".to_string()));
             assert!(result1.is_ok(), "第一次备份应该成功: {:?}", result1.err());
-            let backup1 = result1.unwrap().expect("备份不应为空");
+            let _backup1 = result1.unwrap().expect("备份不应为空");
             assert_eq!(get_backup_count().unwrap(), 1);
 
             let result2 = backup_current_machine_guid(Some("第二次备份相同GUID".to_string()));
@@ -878,8 +878,8 @@ mod tests {
             "权限不足，需要管理员权限才能修改注册表"
         );
         assert_eq!(
-            BackupError::DuplicateBackup("test-guid".to_string()).to_string(),
-            "机器码 test-guid 已存在备份，跳过重复备份"
+            BackupError::InvalidGuidFormat("test-guid".to_string()).to_string(),
+            "无效的 GUID 格式: test-guid"
         );
     }
 
