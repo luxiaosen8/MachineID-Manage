@@ -1,4 +1,4 @@
-name: Release Build
+name: Release
 
 on:
   push:
@@ -7,231 +7,139 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v1.4.0)'
+        description: 'Version to release (e.g., v1.5.0)'
         required: true
-        default: 'v1.4.0'
+        default: 'v1.5.0'
 
 permissions:
   contents: write
 
 jobs:
-  # Windows Build
-  release-windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: '--target x86_64-pc-windows-msvc'
+            name: 'Windows x64'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            name: 'macOS x64'
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            name: 'macOS ARM64'
+          - platform: 'ubuntu-22.04'
+            args: '--target x86_64-unknown-linux-gnu'
+            name: 'Linux x64'
+
+    runs-on: ${{ matrix.platform }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-action@stable
         with:
-          target: x86_64-pc-windows-msvc
+          targets: ${{ matrix.platform == 'macos-latest' && 'x86_64-apple-darwin,aarch64-apple-darwin' || matrix.platform == 'windows-latest' && 'x86_64-pc-windows-msvc' || 'x86_64-unknown-linux-gnu' }}
 
-      - name: Install dependencies
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
-          rustup default stable
-          cargo install tauri-cli --locked --version "^2"
-
-      - name: Build with Tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cargo tauri build --verbose
-
-      - name: List build artifacts
-        run: |
-          Get-ChildItem -Path src-tauri/target/release/bundle -Recurse -ErrorAction SilentlyContinue
-          if (-not $?) {
-            Write-Host "Bundle directory not found, checking alternative locations..."
-            Get-ChildItem -Path src-tauri/target -Recurse -ErrorAction SilentlyContinue
-          }
-
-      - name: Create portable package (Windows)
-        run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
-          if ([string]::IsNullOrEmpty($version)) {
-            $version = "${{ github.event.inputs.version }}".TrimStart('v')
-          }
-          $srcDir = "src-tauri/target/release/bundle"
-          $outDir = "release-output"
-          New-Item -ItemType Directory -Force -Path $outDir
-
-          if (Test-Path $srcDir) {
-            Get-ChildItem -Path $srcDir -Recurse -Include *.msi, *.exe, *.zip | ForEach-Object {
-              Copy-Item $_.FullName -Destination "$outDir/"
-            }
-          } else {
-            Write-Error "Build bundle directory not found at $srcDir"
-            exit 1
-          }
-
-          # Create portable ZIP
-          Compress-Archive -Path "$outDir/*" -DestinationPath "$outDir/MachineID-Manage_${version}_windows_portable.zip" -Force
-
-          Get-ChildItem -Path $outDir
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: machineid-manage-windows
-          path: release-output/
-          retention-days: 1
-
-      - name: Upload Windows Release Assets
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        with:
-          files: |
-            release-output/*.msi
-            release-output/*.exe
-            release-output/*_portable.zip
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          draft: true
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # macOS Build
-  release-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          target: x86_64-apple-darwin
-
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          cargo install tauri-cli --locked --version "^2"
-
-      - name: Build with Tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cargo tauri build --verbose
-        continue-on-error: true
-
-      - name: List build artifacts
-        run: |
-          ls -la src-tauri/target/release/bundle/ || echo "Bundle directory not found"
-          find src-tauri/target/release -name "*.dmg" -o -name "*.app" || echo "No macOS artifacts found"
-        continue-on-error: true
-
-      - name: Create portable package (macOS)
-        run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"
-          if [ -z "$version" ]; then
-            version="${{ github.event.inputs.version }}"
-            version="${version#v}"
-          fi
-          
-          srcDir="src-tauri/target/release/bundle"
-          outDir="release-output"
-          mkdir -p "$outDir"
-
-          if [ -d "$srcDir" ]; then
-            find "$srcDir" -name "*.dmg" -exec cp {} "$outDir/" \;
-            find "$srcDir" -name "*.app" -exec cp -R {} "$outDir/" \;
-          else
-            echo "Build bundle directory not found at $srcDir"
-          fi
-
-          ls -la "$outDir"
-        continue-on-error: true
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: machineid-manage-macos
-          path: release-output/
-          retention-days: 1
-        continue-on-error: true
-
-      - name: Upload macOS Release Assets
-        uses: softprops/action-gh-release@v1
-        if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
-        with:
-          files: |
-            release-output/*.dmg
-            release-output/*.app
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          draft: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-  # Linux Build
-  release-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          cargo install tauri-cli --locked --version "^2"
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Build with Tauri
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cargo tauri build --verbose
-        continue-on-error: true
-
-      - name: List build artifacts
-        run: |
-          ls -la src-tauri/target/release/bundle/ || echo "Bundle directory not found"
-          find src-tauri/target/release -name "*.AppImage" -o -name "*.deb" || echo "No Linux artifacts found"
-        continue-on-error: true
-
-      - name: Create portable package (Linux)
-        run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"
-          if [ -z "$version" ]; then
-            version="${{ github.event.inputs.version }}"
-            version="${version#v}"
-          fi
-          
-          srcDir="src-tauri/target/release/bundle"
-          outDir="release-output"
-          mkdir -p "$outDir"
-
-          if [ -d "$srcDir" ]; then
-            find "$srcDir" -name "*.AppImage" -exec cp {} "$outDir/" \;
-            find "$srcDir" -name "*.deb" -exec cp {} "$outDir/" \;
-          else
-            echo "Build bundle directory not found at $srcDir"
-          fi
-
-          ls -la "$outDir"
-        continue-on-error: true
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
         with:
-          name: machineid-manage-linux
-          path: release-output/
-          retention-days: 1
-        continue-on-error: true
+          tagName: ${{ github.event.inputs.version || github.ref_name }}
+          releaseName: 'MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}'
+          releaseBody: |
+            ## MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
 
-      - name: Upload Linux Release Assets
-        uses: softprops/action-gh-release@v1
-        if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+            ### 下载 / Download
+
+            | 平台 / Platform | 安装版 / Installer | 便携版 / Portable |
+            |:---------------:|:------------------:|:-----------------:|
+            | Windows x64 | `.msi`, `.exe` | `.zip` |
+            | macOS x64 | `.dmg` | `.app.tar.gz` |
+            | macOS ARM64 | `.dmg` | `.app.tar.gz` |
+            | Linux x64 | `.deb`, `.AppImage` | `.AppImage` |
+
+            ### 使用方法 / Usage
+
+            #### Windows
+            1. 下载安装版或便携版
+            2. 以管理员身份运行程序
+            3. 读取、备份或修改 MachineGuid
+
+            #### macOS
+            1. 下载 `.dmg` 文件
+            2. 将应用拖到 Applications 文件夹
+            3. 运行程序（仅支持读取和备份功能）
+
+            #### Linux
+            1. 下载 `.AppImage` 或 `.deb` 包
+            2. 给予执行权限（AppImage）
+            3. 以 root 权限运行（需要时）
+
+            ### 注意事项 / Notes
+
+            - ⚠️ **Windows**: 修改注册表需要管理员权限
+            - ⚠️ **macOS**: 仅支持读取和备份，不支持写入
+            - ⚠️ **Linux**: 写入操作需要 root 权限
+            - ⚠️ 修改前请务必备份您的 MachineGuid
+
+            ### 主要功能 / Features
+
+            - 📖 读取 MachineGuid / Read MachineGuid
+            - 💾 备份管理 / Backup Management
+            - 🔄 恢复备份 / Restore Backup
+            - 🎲 随机生成 / Random Generation
+            - 🔧 自定义替换 / Custom Replace
+            - 📋 复制功能 / Copy Function
+
+            ### 更新日志 / Changelog
+
+            - 新增跨平台支持（Windows、macOS、Linux）
+            - 优化前端弹窗样式
+            - 添加统一确认对话框
+            - 改进国际化支持
+
+            ---
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.inputs.version || github.ref_name }}^...${{ github.event.inputs.version || github.ref_name }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  update-readme:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          files: |
-            release-output/*.AppImage
-            release-output/*.deb
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          draft: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update README with latest release
+        run: |
+          VERSION=${{ github.event.inputs.version || github.ref_name }}
+          echo "Updating README for version $VERSION"
+          # 这里可以添加自动更新 README 版本的脚本
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md README.zh-CN.md || true
+          git commit -m "docs: update version to ${{ github.event.inputs.version || github.ref_name }}" || true
+          git push || true
