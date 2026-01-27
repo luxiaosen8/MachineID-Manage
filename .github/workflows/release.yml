@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
-            args: --bundle dmg,zip
+            args: --bundles dmg,zip
           - platform: ubuntu-22.04
-            args: --bundle deb,appimage
+            args: --bundles deb,appimage
           - platform: windows-latest
-            args: --bundle msi,zip
+            args: --bundles msi,zip
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -44,8 +44,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v1.2.3-beta-{0}', github.sha) }}
-          releaseName: "MachineID-Manage ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.3-beta' }}"
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v1.2.4-beta-{0}', github.sha) }}
+          releaseName: "MachineID-Manage ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.4-beta' }}"
           releaseBody: |
             # MachineID-Manage Release
 
@@ -55,8 +55,8 @@ jobs:
 
             ## What's New | 本次更新
             - ✨ Multi-language Support (en/zh-CN) | 多语言支持
-            - 🚀 Standardized Tauri 2 CI/CD Workflow | 标准化 Tauri 2 构建流
-            - 🐛 Fixed dependencies and path issues | 修复依赖与路径问题
+            - 🚀 Fixed Tauri 2 CLI arguments (--bundles) | 修复 Tauri 2 命令行参数
+            - 🐛 Improved multi-platform compatibility | 提升多平台兼容性
 
             ---
             View full documentation: https://github.com/luxiaosen8/MachineID-Manage
