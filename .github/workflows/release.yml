@@ -8,9 +8,6 @@ on:
       - 'v*'
   workflow_dispatch:
 
-env:
-  NODE_VERSION: '20'
-
 jobs:
   publish:
     permissions:
@@ -24,11 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
       - name: install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -38,18 +30,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y webkit2gtk4.0 libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
-      - name: install frontend dependencies
-        run: |
-          cd src-tauri
-          npm install
+      - name: install tauri-cli
+        run: cargo install tauri-cli --version "^2.0.0"
 
       - name: Build and Release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v1.2.0-beta-{0}', github.sha) }}
-          releaseName: "MachineID-Manage ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.0-beta' }}"
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v1.2.1-beta-{0}', github.sha) }}
+          releaseName: "MachineID-Manage ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.1-beta' }}"
           releaseBody: |
             # MachineID-Manage Release
 
@@ -59,10 +49,11 @@ jobs:
 
             ## What's New | 本次更新
             - ✨ Multi-language Support (en/zh-CN) | 多语言支持
-            - 🚀 Improved CI/CD Workflow with Tauri Action | 优化 CI/CD 工作流
-            - 🐛 Fixed npm install and trigger issues | 修复安装及触发问题
+            - 🚀 Fixed CI/CD Workflow for pure Rust build | 修复纯 Rust 构建的工作流
+            - 🐛 Removed npm dependency | 移除 npm 依赖
 
             ---
             View full documentation: https://github.com/luxiaosen8/MachineID-Manage
           releaseDraft: false
           prerelease: ${{ github.ref_type != 'tag' }}
+          args: --bundles msi,zip,dmg,deb,appimage
