@@ -491,6 +491,7 @@ function displayBackupList(result) {
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                             </svg>
                         </button>
+                        <button class="restore-backup-btn" data-id="${backup.id}" data-guid="${backup.guid}" title="恢复此机器码">恢复此机器码</button>
                         <button class="delete-backup-btn" data-id="${backup.id}" title="删除备份">删除</button>
                     </div>
                 </div>
@@ -508,6 +509,13 @@ function displayBackupList(result) {
             btn.addEventListener('click', async (e) => {
                 const id = e.target.dataset.id;
                 await deleteBackup(id);
+            });
+        });
+
+        listElement.querySelectorAll('.restore-backup-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const { id, guid } = e.currentTarget.dataset;
+                await restoreBackup(id, guid);
             });
         });
     } else {
@@ -568,5 +576,74 @@ async function deleteBackup(id) {
     } catch (error) {
         console.error('删除备份失败:', error);
         statusElement.innerHTML = `<span style="color: #f85149;">删除失败: ${error}</span>`;
+    }
+}
+
+async function restoreBackup(id, guid) {
+    const statusElement = document.getElementById('operation-status');
+
+    if (!confirm(`确定要恢复该备份机器码到系统吗？\n\n备份ID: ${id}\n机器码: ${guid}\n\n将先自动备份当前机器码，再执行恢复。`)) {
+        return;
+    }
+
+    try {
+        statusElement.textContent = '正在备份并恢复...';
+        statusElement.style.color = '#58a6ff';
+
+        if (window.__TAURI__) {
+            const { invoke } = window.__TAURI__.core;
+            const result = await invoke('restore_backup_by_id_command', { id });
+
+            if (!result.success) {
+                statusElement.innerHTML = `<span style="color: #f85149;">❌ 恢复失败: ${result.error}</span>`;
+                return;
+            }
+
+            statusElement.innerHTML = `<span style="color: #3fb950;">✅ 已恢复: ${result.restored_guid}</span>`;
+            await loadBackups();
+            await readMachineId();
+
+            const preBackup = result.pre_backup;
+            const preBackupTime = preBackup ? new Date(preBackup.timestamp * 1000).toLocaleString() : '-';
+            const restoredFrom = result.restored_from;
+
+            alert(
+                `恢复完成\n\n` +
+                `恢复前机器码: ${result.previous_guid}\n` +
+                `恢复后机器码: ${result.restored_guid}\n\n` +
+                `恢复来源备份: ${restoredFrom?.id || id}\n` +
+                `来源机器码: ${restoredFrom?.guid || guid}\n\n` +
+                `已自动备份当前机器码\n` +
+                `备份ID: ${preBackup?.id || '-'}\n` +
+                `备份时间: ${preBackupTime}`
+            );
+        } else {
+            const previousGuid = document.getElementById('machine-guid').textContent;
+            const preBackup = {
+                id: `backup_${Date.now()}`,
+                guid: previousGuid,
+                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                timestamp: Date.now() / 1000,
+                description: `恢复前自动备份: 从备份 ${id} 恢复到 ${guid}`
+            };
+            backupsData.unshift(preBackup);
+            document.getElementById('machine-guid').textContent = guid;
+            statusElement.innerHTML = `<span style="color: #3fb950;">✅ 已恢复: ${guid}</span>`;
+            await loadBackups();
+
+            alert(
+                `恢复完成\n\n` +
+                `恢复前机器码: ${previousGuid}\n` +
+                `恢复后机器码: ${guid}\n\n` +
+                `恢复来源备份: ${id}\n` +
+                `来源机器码: ${guid}\n\n` +
+                `已自动备份当前机器码\n` +
+                `备份ID: ${preBackup.id}\n` +
+                `备份时间: ${new Date(preBackup.timestamp * 1000).toLocaleString()}`
+            );
+        }
+    } catch (error) {
+        console.error('恢复失败:', error);
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ 恢复失败: ${error}</span>`;
     }
 }

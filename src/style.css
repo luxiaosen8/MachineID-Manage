@@ -181,6 +181,17 @@ button:disabled {
     background: #2ea043 !important;
 }
 
+.restore-backup-btn {
+    background: #1f6feb !important;
+    color: white;
+    padding: 0.5rem 0.8rem !important;
+    min-width: auto !important;
+}
+
+.restore-backup-btn:hover {
+    background: #388bfd !important;
+}
+
 .delete-backup-btn {
     background: #cf222e !important;
     color: white;

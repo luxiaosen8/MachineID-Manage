@@ -1,9 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use crate::machine_id::{read_machine_guid, backup_current_machine_guid, delete_backup, MachineIdBackup, write_machine_guid, generate_random_machine_guid};
-use crate::machine_id::list_backups as machine_id_list_backups;
 use crate::machine_id::clear_all_backups as machine_id_clear_all_backups;
 use crate::machine_id::get_backup_count as machine_id_get_backup_count;
+use crate::machine_id::list_backups as machine_id_list_backups;
+use crate::machine_id::{
+    backup_current_machine_guid, delete_backup, generate_random_machine_guid, read_machine_guid,
+    restore_backup_by_id, write_machine_guid, MachineIdBackup, RestoreInfo,
+};
 
 mod machine_id;
 
@@ -146,7 +149,10 @@ struct WriteGuidResponse {
 }
 
 #[tauri::command]
-fn write_machine_guid_command(new_guid: String, description: Option<String>) -> Result<WriteGuidResponse, String> {
+fn write_machine_guid_command(
+    new_guid: String,
+    description: Option<String>,
+) -> Result<WriteGuidResponse, String> {
     match write_machine_guid(&new_guid, description) {
         Ok(backup) => Ok(WriteGuidResponse {
             success: true,
@@ -172,8 +178,50 @@ struct GenerateRandomGuidResponse {
     error: Option<String>,
 }
 
+#[derive(serde::Serialize)]
+struct RestoreBackupResponse {
+    success: bool,
+    previous_guid: String,
+    restored_guid: String,
+    pre_backup: Option<MachineIdBackup>,
+    restored_from: Option<MachineIdBackup>,
+    message: String,
+    error: Option<String>,
+}
+
 #[tauri::command]
-fn generate_random_guid_command(description: Option<String>) -> Result<GenerateRandomGuidResponse, String> {
+fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, String> {
+    match restore_backup_by_id(&id) {
+        Ok(RestoreInfo {
+            previous_guid,
+            restored_guid,
+            pre_backup,
+            restored_from,
+        }) => Ok(RestoreBackupResponse {
+            success: true,
+            previous_guid,
+            restored_guid: restored_guid.clone(),
+            pre_backup: Some(pre_backup),
+            restored_from: Some(restored_from),
+            message: format!("恢复成功: {}", restored_guid),
+            error: None,
+        }),
+        Err(e) => Ok(RestoreBackupResponse {
+            success: false,
+            previous_guid: String::new(),
+            restored_guid: String::new(),
+            pre_backup: None,
+            restored_from: None,
+            message: String::new(),
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+fn generate_random_guid_command(
+    description: Option<String>,
+) -> Result<GenerateRandomGuidResponse, String> {
     match generate_random_machine_guid(description) {
         Ok(backup) => {
             let new_guid = backup.guid.clone();
@@ -184,7 +232,7 @@ fn generate_random_guid_command(description: Option<String>) -> Result<GenerateR
                 message: format!("成功生成并替换 MachineGuid: {}", new_guid),
                 error: None,
             })
-        },
+        }
         Err(e) => Ok(GenerateRandomGuidResponse {
             success: false,
             backup: None,
@@ -211,7 +259,8 @@ fn main() {
             clear_all_backups,
             get_backup_count,
             write_machine_guid_command,
-            generate_random_guid_command
+            generate_random_guid_command,
+            restore_backup_by_id_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

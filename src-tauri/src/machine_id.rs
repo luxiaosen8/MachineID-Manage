@@ -60,7 +60,10 @@ impl BackupStore {
     }
 
     pub fn remove_backup(&mut self, id: &str) -> Result<MachineIdBackup, BackupError> {
-        let index = self.backups.iter().position(|b| b.id == id)
+        let index = self
+            .backups
+            .iter()
+            .position(|b| b.id == id)
             .ok_or(BackupError::BackupNotFound(id.to_string()))?;
         Ok(self.backups.remove(index))
     }
@@ -89,25 +92,23 @@ fn get_backup_file_path() -> PathBuf {
 
 fn load_backup_store() -> Result<BackupStore, BackupError> {
     let path = get_backup_file_path();
-    
+
     if !path.exists() {
         return Ok(BackupStore::new());
     }
-    
-    let content = fs::read_to_string(&path)
-        .map_err(|e| BackupError::StorageError(e.to_string()))?;
-    
-    serde_json::from_str(&content)
-        .map_err(|e| BackupError::StorageError(e.to_string()))
+
+    let content =
+        fs::read_to_string(&path).map_err(|e| BackupError::StorageError(e.to_string()))?;
+
+    serde_json::from_str(&content).map_err(|e| BackupError::StorageError(e.to_string()))
 }
 
 fn save_backup_store(store: &BackupStore) -> Result<(), BackupError> {
     let path = get_backup_file_path();
     let content = serde_json::to_string_pretty(store)
         .map_err(|e| BackupError::StorageError(e.to_string()))?;
-    
-    fs::write(&path, content)
-        .map_err(|e| BackupError::StorageError(e.to_string()))
+
+    fs::write(&path, content).map_err(|e| BackupError::StorageError(e.to_string()))
 }
 
 fn generate_backup_id() -> String {
@@ -118,9 +119,11 @@ fn generate_backup_id() -> String {
     format!("backup_{}", timestamp)
 }
 
-pub fn backup_current_machine_guid(description: Option<String>) -> Result<MachineIdBackup, BackupError> {
+pub fn backup_current_machine_guid(
+    description: Option<String>,
+) -> Result<MachineIdBackup, BackupError> {
     let machine_id = read_machine_guid()?;
-    
+
     let backup = MachineIdBackup {
         id: generate_backup_id(),
         guid: machine_id.guid.clone(),
@@ -131,11 +134,11 @@ pub fn backup_current_machine_guid(description: Option<String>) -> Result<Machin
             .as_secs(),
         description,
     };
-    
+
     let mut store = load_backup_store()?;
     store.add_backup(backup.clone());
     save_backup_store(&store)?;
-    
+
     Ok(backup)
 }
 
@@ -158,85 +161,140 @@ pub fn clear_all_backups() -> Result<(), BackupError> {
 }
 
 pub fn get_backup_count() -> Result<usize, BackupError> {
-     let store = load_backup_store()?;
-     Ok(store.len())
- }
- 
- #[derive(Debug, Clone)]
- pub struct MachineId {
-     pub guid: String,
-     pub source: String,
- }
- 
- pub fn read_machine_guid() -> Result<MachineId, BackupError> {
-     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-     let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
-     let crypt_key = hkcu.open_subkey_with_flags(crypt_path, KEY_READ)
-         .map_err(|e| BackupError::RegistryError(e.to_string()))?;
-     let machine_guid: String = crypt_key.get_value("MachineGuid")
-         .map_err(|e| {
-             if e.kind() == std::io::ErrorKind::NotFound {
-                 BackupError::NotFound
-             } else {
-                 BackupError::RegistryError(e.to_string())
-             }
-         })?;
-     validate_guid_format(&machine_guid)?;
-     Ok(MachineId {
-         guid: machine_guid,
-         source: "HKLM\\SOFTWARE\\Microsoft\\Cryptography".to_string(),
-     })
- }
- 
- fn validate_guid_format(guid: &str) -> Result<(), BackupError> {
-     let guid_pattern = regex::Regex::new(
-         r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-     ).map_err(|e| BackupError::ParseError(e.to_string()))?;
-     if !guid_pattern.is_match(guid) {
-         return Err(BackupError::InvalidGuidFormat(guid.to_string()));
-     }
-     Ok(())
- }
- 
- pub fn write_machine_guid(new_guid: &str, description: Option<String>) -> Result<MachineIdBackup, BackupError> {
-     validate_guid_format(new_guid)?;
-     
-     backup_current_machine_guid(description)?;
-     
-     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-     let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
-     let crypt_key = hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
-         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
-     
-     crypt_key.set_value("MachineGuid", &new_guid)
-         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
-     
-     backup_current_machine_guid(Some(format!("替换后自动备份: {}", new_guid)))?;
-     
-     let machine_id = read_machine_guid()?;
-     Ok(MachineIdBackup {
-         id: generate_backup_id(),
-         guid: machine_id.guid,
-         source: machine_id.source,
-         timestamp: SystemTime::now()
-             .duration_since(UNIX_EPOCH)
-             .unwrap()
-             .as_secs(),
-         description: Some(format!("自定义替换: {}", new_guid)),
-     })
- }
- 
- pub fn read_machine_guid_bytes() -> Result<String, BackupError> {
-     let machine_id = read_machine_guid()?;
-     let bytes: String = machine_id.guid.chars().filter(|c| *c != '-').collect();
-     Ok(bytes)
- }
+    let store = load_backup_store()?;
+    Ok(store.len())
+}
 
- pub fn generate_random_guid() -> String {
-     let mut rng = rand::thread_rng();
-     let bytes: [u8; 16] = rand::Rng::gen(&mut rng);
-     
-     format!(
+pub fn get_backup_by_id(id: &str) -> Result<MachineIdBackup, BackupError> {
+    let store = load_backup_store()?;
+    store
+        .get_backup(id)
+        .cloned()
+        .ok_or(BackupError::BackupNotFound(id.to_string()))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RestoreInfo {
+    pub previous_guid: String,
+    pub restored_guid: String,
+    pub pre_backup: MachineIdBackup,
+    pub restored_from: MachineIdBackup,
+}
+
+fn set_machine_guid_value(new_guid: &str) -> Result<(), BackupError> {
+    let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_key = hkcu
+        .open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
+        .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
+    crypt_key
+        .set_value("MachineGuid", &new_guid)
+        .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
+    Ok(())
+}
+
+pub fn restore_backup_by_id(id: &str) -> Result<RestoreInfo, BackupError> {
+    let target = get_backup_by_id(id)?;
+    validate_guid_format(&target.guid)?;
+
+    let previous = read_machine_guid()?;
+    let pre_backup = backup_current_machine_guid(Some(format!(
+        "恢复前自动备份: 从备份 {} 恢复到 {}",
+        target.id, target.guid
+    )))?;
+
+    set_machine_guid_value(&target.guid)?;
+    let restored = read_machine_guid()?;
+
+    Ok(RestoreInfo {
+        previous_guid: previous.guid,
+        restored_guid: restored.guid,
+        pre_backup,
+        restored_from: target,
+    })
+}
+
+#[derive(Debug, Clone)]
+pub struct MachineId {
+    pub guid: String,
+    pub source: String,
+}
+
+pub fn read_machine_guid() -> Result<MachineId, BackupError> {
+    let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_key = hkcu
+        .open_subkey_with_flags(crypt_path, KEY_READ)
+        .map_err(|e| BackupError::RegistryError(e.to_string()))?;
+    let machine_guid: String = crypt_key.get_value("MachineGuid").map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            BackupError::NotFound
+        } else {
+            BackupError::RegistryError(e.to_string())
+        }
+    })?;
+    validate_guid_format(&machine_guid)?;
+    Ok(MachineId {
+        guid: machine_guid,
+        source: "HKLM\\SOFTWARE\\Microsoft\\Cryptography".to_string(),
+    })
+}
+
+fn validate_guid_format(guid: &str) -> Result<(), BackupError> {
+    let guid_pattern = regex::Regex::new(
+        r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+    )
+    .map_err(|e| BackupError::ParseError(e.to_string()))?;
+    if !guid_pattern.is_match(guid) {
+        return Err(BackupError::InvalidGuidFormat(guid.to_string()));
+    }
+    Ok(())
+}
+
+pub fn write_machine_guid(
+    new_guid: &str,
+    description: Option<String>,
+) -> Result<MachineIdBackup, BackupError> {
+    validate_guid_format(new_guid)?;
+
+    backup_current_machine_guid(description)?;
+
+    let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_key = hkcu
+        .open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
+        .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
+
+    crypt_key
+        .set_value("MachineGuid", &new_guid)
+        .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
+
+    backup_current_machine_guid(Some(format!("替换后自动备份: {}", new_guid)))?;
+
+    let machine_id = read_machine_guid()?;
+    Ok(MachineIdBackup {
+        id: generate_backup_id(),
+        guid: machine_id.guid,
+        source: machine_id.source,
+        timestamp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+        description: Some(format!("自定义替换: {}", new_guid)),
+    })
+}
+
+pub fn read_machine_guid_bytes() -> Result<String, BackupError> {
+    let machine_id = read_machine_guid()?;
+    let bytes: String = machine_id.guid.chars().filter(|c| *c != '-').collect();
+    Ok(bytes)
+}
+
+pub fn generate_random_guid() -> String {
+    let mut rng = rand::thread_rng();
+    let bytes: [u8; 16] = rand::Rng::gen(&mut rng);
+
+    format!(
          "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
          bytes[0], bytes[1], bytes[2], bytes[3],
          bytes[4], bytes[5],
@@ -244,12 +302,14 @@ pub fn get_backup_count() -> Result<usize, BackupError> {
          bytes[8], bytes[9],
          bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
      )
- }
+}
 
- pub fn generate_random_machine_guid(description: Option<String>) -> Result<MachineIdBackup, BackupError> {
-     let new_guid = generate_random_guid();
-     write_machine_guid(&new_guid, description)
- }
+pub fn generate_random_machine_guid(
+    description: Option<String>,
+) -> Result<MachineIdBackup, BackupError> {
+    let new_guid = generate_random_guid();
+    write_machine_guid(&new_guid, description)
+}
 
 #[cfg(test)]
 mod tests {
@@ -388,12 +448,16 @@ mod tests {
             assert_eq!(get_backup_count().unwrap(), 0);
         });
     }
-    
+
     #[test]
     fn test_read_machine_guid() {
         let result = read_machine_guid();
         if cfg!(target_os = "windows") {
-            assert!(result.is_ok(), "应该能成功读取 MachineGuid: {:?}", result.err());
+            assert!(
+                result.is_ok(),
+                "应该能成功读取 MachineGuid: {:?}",
+                result.err()
+            );
             let machine_id = result.unwrap();
             assert!(!machine_id.guid.is_empty());
             assert_eq!(machine_id.guid.len(), 36);
@@ -401,7 +465,7 @@ mod tests {
             assert!(result.is_err());
         }
     }
-    
+
     #[test]
     fn test_read_machine_guid_bytes() {
         if cfg!(target_os = "windows") {
@@ -433,9 +497,9 @@ mod tests {
             "invalid-guid",
             "550E8400-E29B-41D4-A716",
             "550E8400E29B41D4A716446655440000",
-            "550E8400-E29B-41D4-A716-44665544000", // 少一位
+            "550E8400-E29B-41D4-A716-44665544000",   // 少一位
             "550E8400-E29B-41D4-A716-4466554400000", // 多一位
-            "550E8400-E29B-41D4-A716-44665544000g", // 包含非法字符
+            "550E8400-E29B-41D4-A716-44665544000g",  // 包含非法字符
             "",
             "not-a-guid",
         ];
@@ -476,6 +540,49 @@ mod tests {
 
             let restored_guid = read_machine_guid().unwrap();
             assert_eq!(restored_guid.guid, original_guid.guid);
+        });
+    }
+
+    #[test]
+    fn test_restore_backup_by_id() {
+        if !cfg!(target_os = "windows") {
+            return;
+        }
+
+        with_temp_backup_dir(|_temp_dir| {
+            let original = read_machine_guid().unwrap();
+            let target_backup =
+                backup_current_machine_guid(Some("恢复目标备份".to_string())).unwrap();
+
+            let test_guid = "550E8400-E29B-41D4-A716-446655440000";
+            let change_result = write_machine_guid(test_guid, Some("准备恢复测试".to_string()));
+
+            if let Err(BackupError::RegistryWriteError(_)) = change_result {
+                println!("⚠️ 跳过恢复测试: 需要管理员权限");
+                return;
+            }
+
+            assert!(
+                change_result.is_ok(),
+                "切换到测试GUID应成功: {:?}",
+                change_result.err()
+            );
+            let changed = read_machine_guid().unwrap();
+            assert_eq!(changed.guid, test_guid);
+
+            let restore_result = restore_backup_by_id(&target_backup.id);
+            if let Err(BackupError::RegistryWriteError(_)) = restore_result {
+                println!("⚠️ 跳过恢复测试: 需要管理员权限");
+                return;
+            }
+            assert!(
+                restore_result.is_ok(),
+                "恢复应成功: {:?}",
+                restore_result.err()
+            );
+
+            let restored = read_machine_guid().unwrap();
+            assert_eq!(restored.guid, original.guid);
         });
     }
 
@@ -543,7 +650,10 @@ mod tests {
             assert!(result.is_ok(), "生成随机GUID应该成功: {:?}", result.err());
 
             let new_guid = read_machine_guid().unwrap();
-            assert_ne!(new_guid.guid, original_guid.guid, "新GUID应该与原始GUID不同");
+            assert_ne!(
+                new_guid.guid, original_guid.guid,
+                "新GUID应该与原始GUID不同"
+            );
 
             let parts: Vec<&str> = new_guid.guid.split('-').collect();
             assert_eq!(parts.len(), 5);
