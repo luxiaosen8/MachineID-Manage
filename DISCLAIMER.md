@@ -1,60 +1,131 @@
-﻿# 鍏嶈矗澹版槑
+# 免责声明 / Disclaimer
 
-**閲嶈澹版槑锛氳鍦ㄤ娇鐢?MachineID-Manage 鍓嶄粩缁嗛槄璇绘湰鍏嶈矗澹版槑銆?*
-
-## 1. 杞欢鎸?鍘熸牱"鎻愪緵
-
-MachineID-Manage锛堜互涓嬬畝绉?鏈蒋浠?锛夋寜"鍘熸牱"鎻愪緵锛屼笉鎻愪緵浠讳綍鏄庣ず鎴栨殫绀虹殑淇濊瘉锛屽寘鎷絾涓嶉檺浜庡閫傞攢鎬с€佺壒瀹氱敤閫旈€傜敤鎬у拰闈炰镜鏉冩€х殑淇濊瘉銆備綔鑰呭拰璐＄尞鑰呬笉瀵规湰杞欢鐨勫噯纭€с€佸彲闈犳€ф垨瀹屾暣鎬у仛鍑轰换浣曚繚璇併€?
-## 2. 浣跨敤椋庨櫓
-
-鎮ㄦ槑纭悊瑙ｅ苟鍚屾剰锛?- 浣跨敤鏈蒋浠剁殑椋庨櫓鐢辨偍鑷鎵挎媴
-- 鏈蒋浠跺彲鑳藉寘鍚敊璇€佹紡娲炴垨缂洪櫡
-- 鏈蒋浠剁殑鎿嶄綔缁撴灉鍙兘涓嶇鍚堟偍鐨勯鏈?
-## 3. 绯荤粺淇敼椋庨櫓
-
-鈿狅笍 **璀﹀憡锛氭湰杞欢鐩存帴鎿嶄綔 Windows 娉ㄥ唽琛?*
-
-淇敼娉ㄥ唽琛ㄦ槸涓€椤规晱鎰熸搷浣滐紝鍙兘瀵艰嚧锛?- 绯荤粺涓嶇ǔ瀹?- 杞欢鏃犳硶姝ｅ父杩愯
-- 鍚姩澶辫触
-- 鏁版嵁涓㈠け
-
-**鍦ㄦ墽琛屼换浣曚慨鏀规搷浣滃墠锛岃鍔″繀锛?*
-1. 鍒涘缓瀹屾暣鐨勭郴缁熷浠?2. 瀵煎嚭褰撳墠 MachineGuid 鍊?3. 浜嗚В濡備綍鎵嬪姩鎭㈠娉ㄥ唽琛?4. 鍦ㄦ祴璇曠幆澧冧腑鍏堥獙璇佹搷浣?
-## 4. 璐ｄ换闄愬埗
-
-鍦ㄤ换浣曟儏鍐典笅锛屼綔鑰呫€佽础鐚€呮垨浠讳綍涓庢湰椤圭洰鐩稿叧鐨勪汉鍛樺潎涓嶅浠ヤ笅鎯呭喌璐熻矗锛?- 鐩存帴鎹熷銆侀棿鎺ユ崯瀹炽€侀檮甯︽崯瀹炽€佺壒娈婃崯瀹虫垨鍚庢灉鎬ф崯瀹?- 鏁版嵁涓㈠け鎴栦笟鍔′腑鏂?- 鍥犱娇鐢ㄦ垨鏃犳硶浣跨敤鏈蒋浠惰€屽鑷寸殑浠讳綍鎹熷け
-
-鍗充娇宸茶鍛婄煡鍙兘鍙戠敓姝ょ被鎹熷銆?
-## 5. 绗笁鏂归摼鎺?
-鏈蒋浠跺彲鑳藉寘鍚寚鍚戠涓夋柟缃戠珯鎴栬祫婧愮殑閾炬帴銆傛垜浠杩欎簺绗笁鏂瑰唴瀹逛笉鎵挎媴璐ｄ换銆傛偍鎵胯骞跺悓鎰忔垜浠笉瀵圭涓夋柟鍐呭鎴栨湇鍔＄殑浠讳綍閿欒鎴栭仐婕忚礋璐ｃ€?
-## 6. 鐭ヨ瘑浜ф潈
-
-- 鏈蒋浠舵寜 MIT 璁稿彲璇佹巿鏉?- 浣跨敤鏈蒋浠跺墠锛岃纭繚鎮ㄦ湁鍚堟硶鐨勪娇鐢ㄦ潈
-- 鎴戜滑涓嶅浠讳綍鐭ヨ瘑浜ф潈浜夎璐熻矗
-
-## 7. 鍑哄彛鍚堣
-
-鎮ㄥ悓鎰忛伒瀹堟墍鏈夐€傜敤鐨勫嚭鍙ｇ鍒舵硶寰嬫硶瑙勩€傛偍澹版槑鎮ㄦ湭浣嶄簬銆佸彈鎺т簬鎴栦綅浜庝换浣曠杩愭垨鍙楅檺鍥藉/鍦板尯銆?
-## 8. 鍗忚鍙樻洿
-
-鎴戜滑淇濈暀鍦ㄤ笉浜嬪厛閫氱煡鐨勬儏鍐典笅淇敼鏈厤璐ｅ０鏄庣殑鏉冨埄銆傚缓璁偍瀹氭湡鏌ョ湅鏈〉闈互浜嗚В浠讳綍鍙樻洿銆?
-## 9. 鍙垎鍓叉€?
-濡傛灉鏈厤璐ｅ０鏄庣殑浠讳綍鏉℃琚瀹氫负鏃犳晥鎴栦笉鍙墽琛岋紝璇ユ潯娆惧簲鍦ㄦ渶澶у厑璁歌寖鍥村唴鎵ц锛屽叾浣欐潯娆惧皢缁х画瀹屽叏鏈夋晥銆?
-## 10. 瀹屾暣鍗忚
-
-鏈厤璐ｅ０鏄庢瀯鎴愭湰杞欢浣跨敤鎮ㄤ笌浣滆€呬箣闂寸殑瀹屾暣鍗忚锛屽彇浠ｆ偍涓庝綔鑰呬箣闂村氨鏈蒋浠跺彲鑳藉瓨鍦ㄧ殑浠讳綍鍏堝墠鍗忚銆?
----
-
-## 鑱旂郴鏂瑰紡
-
-濡傚鏈厤璐ｅ０鏄庢湁浠讳綍鐤戦棶锛岃閫氳繃浠ヤ笅鏂瑰紡鑱旂郴锛?
-- GitHub Issues锛歨ttps://github.com/luxiaosen8/MachineID-Manage/issues
-- 閭锛歔寰呮坊鍔犺仈绯绘柟寮廬
+**最后更新 / Last Updated**: 2026-01-27
 
 ---
 
-**浣跨敤鏈蒋浠跺嵆琛ㄧず鎮ㄥ凡闃呰銆佺悊瑙ｅ苟鍚屾剰鍙楁湰鍏嶈矗澹版槑鐨勭害鏉熴€?*
+## 重要声明 / Important Notice
+
+### English
+
+MachineID-Manage is provided "as is" without any warranties, express or implied. The developers and contributors make no representations or warranties regarding the accuracy, reliability, or completeness of the software.
+
+**By using this software, you acknowledge and agree that:**
+
+1. **Use at Your Own Risk**: You understand that modifying system registry values, including MachineGuid, carries inherent risks. Any changes you make are solely at your own risk.
+
+2. **No Warranty**: The software is provided without warranty of any kind. The developers disclaim all warranties, express or implied.
+
+3. **No Liability**: In no event shall the developers or contributors be liable for any damages arising from the use of this software.
+
+4. **System Impact**: Modifying MachineGuid may affect Windows activation, software licensing, system identification, and other critical system functions.
+
+5. **Backup Responsibility**: You are solely responsible for creating and maintaining backups of your system and data before using this software.
+
+6. **Administrator Privileges**: This software requires administrator privileges to modify registry values. Ensure you understand the implications before granting these privileges.
+
+### 中文
+
+MachineID-Manage 按"原样"提供，不作任何明示或暗示的保证。开发者和贡献者对软件的准确性、可靠性或完整性不作任何陈述或保证。
+
+**使用本软件即表示您确认并同意：**
+
+1. **风险自担**: 您理解修改系统注册表值（包括 MachineGuid）存在固有风险。您进行的任何更改均由您自行承担风险。
+
+2. **不提供保证**: 软件不提供任何形式的保证。开发者否认所有明示或暗示的保证。
+
+3. **不承担责任**: 开发者或贡献者对于因使用本软件而产生的任何损害不承担任何责任。
+
+4. **系统影响**: 修改 MachineGuid 可能会影响 Windows 激活、软件许可、系统识别和其他关键系统功能。
+
+5. **备份责任**: 在使用本软件之前，您有责任创建和维护系统及数据的备份。
+
+6. **管理员权限**: 本软件需要管理员权限来修改注册表值。在授予这些权限之前，请确保您了解其影响。
 
 ---
 
-**鏈€鍚庢洿鏂?*锛?025骞?鏈?7鏃?
+## 使用限制 / Usage Restrictions
+
+### English
+
+- This software is intended for use on Windows operating systems only.
+- You must have administrator privileges to modify registry values.
+- Modifying MachineGuid should only be done after understanding the potential consequences.
+- This software is not affiliated with, endorsed by, or sponsored by Microsoft Corporation.
+
+### 中文
+
+- 本软件仅适用于 Windows 操作系统。
+- 您必须具有管理员权限才能修改注册表值。
+- 只有在了解潜在后果后才应修改 MachineGuid。
+- 本软件与 Microsoft Corporation 无关，未经其认可或赞助。
+
+---
+
+## 隐私说明 / Privacy Statement
+
+### English
+
+MachineID-Manage does not collect, store, or transmit any personal information. All data is stored locally on your machine.
+
+- Backup files are stored in the application directory.
+- No data is sent to any remote servers.
+- No analytics or tracking of any kind is implemented.
+
+### 中文
+
+MachineID-Manage 不会收集、存储或传输任何个人信息。所有数据都存储在您的本地机器上。
+
+- 备份文件存储在应用程序目录中。
+- 不会向任何远程服务器发送数据。
+- 不实施任何分析或跟踪。
+
+---
+
+## 第三方软件声明 / Third-Party Software
+
+### English
+
+MachineID-Manage uses the following third-party software:
+
+- **Tauri**: Licensed under MIT and Apache 2.0
+- **Rust**: Licensed under Apache 2.0 and MIT
+- **winreg (Rust crate)**: Licensed under MIT
+
+See [Cargo.toml](src-tauri/Cargo.toml) for full dependency details.
+
+### 中文
+
+MachineID-Manage 使用以下第三方软件：
+
+- **Tauri**: MIT 和 Apache 2.0 许可证
+- **Rust**: Apache 2.0 和 MIT 许可证
+- **winreg (Rust crate)**: MIT 许可证
+
+查看 [Cargo.toml](src-tauri/Cargo.toml) 了解完整的依赖详情。
+
+---
+
+## 变更声明 / Changes to This Disclaimer
+
+### English
+
+We reserve the right to modify this disclaimer at any time without notice. Your continued use of the software constitutes acceptance of any changes.
+
+### 中文
+
+我们保留随时修改此免责声明的权利，恕不另行通知。您继续使用本软件即表示接受任何更改。
+
+---
+
+## 联系方式 / Contact
+
+如果您对本免责声明有任何疑问，请通过以下方式联系我们：
+
+- **GitHub Issues**: [https://github.com/luxiaosen8/MachineID-Manage/issues](https://github.com/luxiaosen8/MachineID-Manage/issues)
+
+---
+
+**您使用 MachineID-Manage 即表示您已阅读、理解并同意本免责声明的全部条款。**
+
+*By using MachineID-Manage, you acknowledge that you have read, understood, and agree to be bound by all terms and conditions of this disclaimer.*
