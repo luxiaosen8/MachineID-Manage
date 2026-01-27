@@ -5,6 +5,8 @@ console.log('MachineID-Manage Initializing...');
 let backupsData = [];
 const APP_VERSION = '0.1.0';
 
+const MOCK_REGISTRY_SOURCE = 'HKLM\\SOFTWARE\\Microsoft\\Cryptography';
+
 window.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded, initializing i18n...');
 
@@ -24,7 +26,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         displayMachineId({
             success: true,
             guid: '550E8400-E29B-41D4-A716-446655440000',
-            source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+            source: MOCK_REGISTRY_SOURCE,
             error: null
         });
         loadBackupsMock();
@@ -100,37 +102,31 @@ async function requestAdminRestart() {
     }
 
     try {
-        const { app, window } = window.__TAURI__.core;
+        const { app } = window.__TAURI__.core;
         const appPath = await app.path.executablePath();
-        
+
         console.log('Attempting to restart with admin privileges:', appPath);
-        
+
         const { Shell } = await import('@tauri-apps/plugin/shell');
-        
-        const useCmd = Shell.create()
-            .sidecar('shell')
-            .then((shell) => shell.execute(`powershell.exe -Command "Start-Process '${appPath}' -Verb RunAs"`));
-        
-        await useCmd;
-        
+        const shell = await Shell.create();
+        await shell.sidecar('shell').execute(`powershell.exe -Command "Start-Process '${appPath}' -Verb RunAs"`);
+
         await app.exit(0);
     } catch (shellError) {
         console.warn('PowerShell method failed, trying fallback:', shellError);
-        
+
         try {
             const { app } = window.__TAURI__.core;
             const appPath = await app.path.executablePath();
-            
+
             const { Command } = await import('@tauri-apps/plugin/shell');
-            const { spawn } = await import('child_process');
-            
-            const { execSync } = require('child_process');
-            execSync(`powershell.exe -Command "Start-Process '${appPath}' -Verb RunAs"`);
-            
+            const command = await Command.create('powershell.exe', ['-Command', `Start-Process '${appPath}' -Verb RunAs`]);
+            await command.execute();
+
             await app.exit(0);
         } catch (fallbackError) {
             console.warn('Fallback method also failed:', fallbackError);
-            
+
             try {
                 const { app } = window.__TAURI__.core;
                 await app.relaunch();
@@ -350,14 +346,14 @@ async function confirmCustomReplace() {
             const mockPreBackup = {
                 id: `backup_pre_${Date.now()}`,
                 guid: document.getElementById('machine-guid')?.textContent,
-                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                source: MOCK_REGISTRY_SOURCE,
                 timestamp: Date.now() / 1000,
                 description: `Pre-replace backup`
             };
             const mockPostBackup = {
                 id: `backup_post_${Date.now()}`,
                 guid: newGuid,
-                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                source: MOCK_REGISTRY_SOURCE,
                 timestamp: Date.now() / 1000 + 1,
                 description: `Custom replace backup: ${newGuid}`
             };
@@ -496,14 +492,14 @@ async function confirmRandomGenerate() {
             const mockPreBackup = {
                 id: `backup_pre_${Date.now()}`,
                 guid: guidElement?.textContent,
-                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                source: MOCK_REGISTRY_SOURCE,
                 timestamp: Date.now() / 1000,
                 description: `Pre-replace backup`
             };
             const mockPostBackup = {
                 id: `backup_post_${Date.now()}`,
                 guid: newGuid,
-                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                source: MOCK_REGISTRY_SOURCE,
                 timestamp: Date.now() / 1000 + 1,
                 description: `Random generate backup: ${newGuid}`
             };
@@ -576,7 +572,7 @@ async function readMachineId() {
             displayMachineId({
                 success: true,
                 guid: '550E8400-E29B-41D4-A716-446655440000',
-                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                source: MOCK_REGISTRY_SOURCE,
                 error: null
             });
         }
@@ -628,7 +624,7 @@ async function backupMachineGuid() {
                 backup: {
                     id: `backup_${Date.now()}`,
                     guid: guidElement?.textContent,
-                    source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                    source: MOCK_REGISTRY_SOURCE,
                     timestamp: Date.now() / 1000,
                     description: `Backup ${new Date().toLocaleString()}`
                 },
@@ -698,7 +694,7 @@ function loadBackupsMock() {
         {
             id: 'backup_1737950000000',
             guid: '550E8400-E29B-41D4-A716-446655440000',
-            source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+            source: MOCK_REGISTRY_SOURCE,
             timestamp: 1737950000,
             description: 'Initial backup'
         }
@@ -867,7 +863,7 @@ async function restoreBackup(id, guid) {
             const preBackup = {
                 id: `backup_${Date.now()}`,
                 guid: previousGuid,
-                source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
+                source: MOCK_REGISTRY_SOURCE,
                 timestamp: Date.now() / 1000,
                 description: `Auto backup before restore: From backup ${id} to ${guid}`
             };

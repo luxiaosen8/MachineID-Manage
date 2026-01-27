@@ -93,6 +93,10 @@ impl BackupStore {
     }
 }
 
+fn get_registry_path() -> &'static str {
+    "SOFTWARE\\Microsoft\\Cryptography"
+}
+
 fn get_backup_file_path() -> PathBuf {
     if let Ok(path_str) = std::env::var("BACKUP_TEST_PATH") {
         return PathBuf::from(path_str);
@@ -108,7 +112,7 @@ pub fn check_admin_permissions() -> bool {
     }
 
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_path = get_registry_path();
 
     match hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ) {
         Ok(_) => true,
@@ -122,7 +126,7 @@ pub fn test_registry_write_access() -> Result<(), BackupError> {
     }
 
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_path = get_registry_path();
 
     match hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ) {
         Ok(_) => Ok(()),
@@ -234,7 +238,7 @@ pub struct RestoreInfo {
 
 fn set_machine_guid_value(new_guid: &str) -> Result<(), BackupError> {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_path = get_registry_path();
     let crypt_key = hkcu
         .open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
@@ -273,7 +277,7 @@ pub struct MachineId {
 
 pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_path = get_registry_path();
     let crypt_key = hkcu
         .open_subkey_with_flags(crypt_path, KEY_READ)
         .map_err(|e| BackupError::RegistryError(e.to_string()))?;
@@ -287,7 +291,7 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     validate_guid_format(&machine_guid)?;
     Ok(MachineId {
         guid: machine_guid,
-        source: "HKLM\\SOFTWARE\\Microsoft\\Cryptography".to_string(),
+        source: format!("HKLM\\{}", crypt_path).replace('\\', "\\"),
     })
 }
 
@@ -311,7 +315,7 @@ pub fn write_machine_guid(
     let pre_backup = backup_current_machine_guid(description)?;
 
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
+    let crypt_path = get_registry_path();
     let crypt_key = hkcu
         .open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
