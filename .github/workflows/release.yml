@@ -2,14 +2,17 @@ name: Release
 
 on:
   push:
+    branches:
+      - master
+      - main
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., v1.5.0)'
-        required: true
-        default: 'v1.5.0'
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+      - main
 
 permissions:
   contents: write
@@ -61,10 +64,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.event.inputs.version || github.ref_name }}
-          releaseName: 'MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}'
+          tagName: app-v__VERSION__
+          releaseName: 'MachineID-Manage v__VERSION__'
           releaseBody: |
-            ## MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
+            ## MachineID-Manage v__VERSION__
 
             ### 下载 / Download
 
@@ -117,29 +120,7 @@ jobs:
 
             ---
 
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.inputs.version || github.ref_name }}^...${{ github.event.inputs.version || github.ref_name }}
+            **Full Changelog**: https://github.com/${{ github.repository }}/commits/master
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-
-  update-readme:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update README with latest release
-        run: |
-          VERSION=${{ github.event.inputs.version || github.ref_name }}
-          echo "Updating README for version $VERSION"
-          # 这里可以添加自动更新 README 版本的脚本
-
-      - name: Commit changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add README.md README.zh-CN.md || true
-          git commit -m "docs: update version to ${{ github.event.inputs.version || github.ref_name }}" || true
-          git push || true
