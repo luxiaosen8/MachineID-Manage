@@ -57,6 +57,7 @@
   "backup.restoreTitle": "Restore this MachineGuid",
   "backup.deleteTitle": "Delete backup",
 
+  "confirm.title": "Confirm Operation",
   "confirm.backupBeforeReplace": "This will automatically backup the current MachineGuid!",
   "confirm.backupBeforeRestore": "This will automatically backup the current MachineGuid before restoring!",
   "confirm.deleteBackup": "Are you sure you want to delete this backup?",
