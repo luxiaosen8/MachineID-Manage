@@ -29,12 +29,15 @@ jobs:
       - name: Build with Tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: src-tauri
         run: cargo tauri build --verbose
 
       - name: List build artifacts
-        working-directory: src-tauri
-        run: Get-ChildItem -Path target/release/bundle -Recurse
+        run: |
+          Get-ChildItem -Path src-tauri/target/release/bundle -Recurse -ErrorAction SilentlyContinue
+          if (-not $?) {
+            Write-Host "Bundle directory not found, checking alternative locations..."
+            Get-ChildItem -Path src-tauri/target -Recurse -ErrorAction SilentlyContinue
+          }
 
       - name: Create portable package (Windows)
         run: |
@@ -43,8 +46,13 @@ jobs:
           $outDir = "release-output"
           New-Item -ItemType Directory -Force -Path $outDir
 
-          Get-ChildItem -Path $srcDir -Recurse -Include *.msi, *.exe, *.zip | ForEach-Object {
-            Copy-Item $_.FullName -Destination "$outDir/"
+          if (Test-Path $srcDir) {
+            Get-ChildItem -Path $srcDir -Recurse -Include *.msi, *.exe, *.zip | ForEach-Object {
+              Copy-Item $_.FullName -Destination "$outDir/"
+            }
+          } else {
+            Write-Error "Build bundle directory not found at $srcDir"
+            exit 1
           }
 
           Compress-Archive -Path "$outDir/*" -DestinationPath "$outDir/MachineID-Manage_${version}_windows_portable.zip" -Force
