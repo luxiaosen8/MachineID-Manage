@@ -56,7 +56,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build with Tauri (Windows)
         id: build-windows
@@ -97,7 +97,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build with Tauri (macOS)
         id: build-macos
@@ -138,7 +138,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install system dependencies
         run: |

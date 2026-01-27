@@ -1,20 +1,26 @@
 // MachineID-Manage 前端交互逻辑
 
-console.log('MachineID-Manage 初始化中...');
+console.log('MachineID-Manage Initializing...');
 
-// 备份列表数据
 let backupsData = [];
+const APP_VERSION = '0.1.0';
 
 window.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM 已加载，等待 Tauri 绑定...');
+    console.log('DOM loaded, initializing i18n...');
+
+    await window.i18n.init();
+    window.i18n.updateAllTexts();
+
+    console.log('Tauri ready:', !!window.__TAURI__);
+    console.log('Current locale:', window.i18n.getLocale());
 
     if (window.__TAURI__) {
-        console.log('Tauri 已就绪');
+        console.log('Tauri is ready');
         await checkAndDisplayPermissionStatus();
         await readMachineId();
         await loadBackups();
     } else {
-        console.log('Tauri 未就绪（开发模式），使用模拟数据');
+        console.log('Tauri not ready (development mode), using mock data');
         displayMachineId({
             success: true,
             guid: '550E8400-E29B-41D4-A716-446655440000',
@@ -27,6 +33,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     initializeEventListeners();
 });
 
+function _(key, params = {}) {
+    return window.i18n ? window.i18n.t(key, params) : key;
+}
+
+function updateStatus(messageKey, params = {}) {
+    const statusElement = document.getElementById('operation-status');
+    if (statusElement) {
+        statusElement.innerHTML = _(messageKey, params);
+    }
+}
+
 async function checkAndDisplayPermissionStatus() {
     const statusElement = document.getElementById('operation-status');
     if (!statusElement) return;
@@ -37,13 +54,13 @@ async function checkAndDisplayPermissionStatus() {
             const result = await invoke('check_permission_command');
 
             if (result.success && result.has_permission) {
-                statusElement.innerHTML = `<span style="color: #3fb950;">🛡️ 管理员权限已就绪</span>`;
+                updateStatus('status.permissionGranted');
             } else {
-                statusElement.innerHTML = `<span style="color: #f85149;">⚠️ 权限不足，需要管理员权限</span>`;
+                updateStatus('status.permissionDenied');
             }
         }
     } catch (error) {
-        console.error('权限检测失败:', error);
+        console.error('Permission check failed:', error);
     }
 }
 
@@ -61,9 +78,7 @@ async function checkPermissionBeforeWrite() {
         }
 
         const confirmed = confirm(
-            '权限不足！\n\n' +
-            '此操作需要管理员权限才能修改注册表。\n\n' +
-            '是否立即以管理员身份重启程序？'
+            _('confirm.permissionRequired')
         );
 
         if (confirmed) {
@@ -73,14 +88,14 @@ async function checkPermissionBeforeWrite() {
 
         return { hasPermission: false, needRestart: false };
     } catch (error) {
-        console.error('权限检测失败:', error);
+        console.error('Permission check failed:', error);
         return { hasPermission: false, needRestart: false };
     }
 }
 
 async function requestAdminRestart() {
     if (!window.__TAURI__) {
-        alert('请右键点击程序，选择"以管理员身份运行"');
+        alert(_('alert.permissionRequired'));
         return;
     }
 
@@ -88,7 +103,7 @@ async function requestAdminRestart() {
         const { app, window } = window.__TAURI__.core;
         const appPath = await app.path.executablePath();
         
-        console.log('尝试以管理员权限重启:', appPath);
+        console.log('Attempting to restart with admin privileges:', appPath);
         
         const { Shell } = await import('@tauri-apps/plugin/shell');
         
@@ -100,7 +115,7 @@ async function requestAdminRestart() {
         
         await app.exit(0);
     } catch (shellError) {
-        console.warn('PowerShell 方法失败，尝试备用方法:', shellError);
+        console.warn('PowerShell method failed, trying fallback:', shellError);
         
         try {
             const { app } = window.__TAURI__.core;
@@ -114,95 +129,129 @@ async function requestAdminRestart() {
             
             await app.exit(0);
         } catch (fallbackError) {
-            console.warn('备用方法也失败:', fallbackError);
+            console.warn('Fallback method also failed:', fallbackError);
             
             try {
                 const { app } = window.__TAURI__.core;
                 await app.relaunch();
                 await app.exit(0);
             } catch (finalError) {
-                console.error('所有重启方法都失败:', finalError);
-                alert('无法自动以管理员身份重启。\n\n请手动操作：\n1. 关闭当前程序\n2. 右键点击程序\n3. 选择"以管理员身份运行"');
+                console.error('All restart methods failed:', finalError);
+                alert(_('alert.autoRestartFailed'));
             }
         }
     }
 }
 
 function initializeEventListeners() {
-    document.getElementById('read-btn')?.addEventListener('click', async () => {
-        await readMachineId();
-    });
+    const readBtn = document.getElementById('read-btn');
+    if (readBtn) {
+        readBtn.addEventListener('click', async () => {
+            await readMachineId();
+        });
+    }
     
-    document.getElementById('backup-btn')?.addEventListener('click', async () => {
-        await backupMachineGuid();
-    });
+    const backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', async () => {
+            await backupMachineGuid();
+        });
+    }
     
-    document.getElementById('generate-btn')?.addEventListener('click', () => {
-        openRandomGenerateModal();
-    });
+    const generateBtn = document.getElementById('generate-btn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', () => {
+            openRandomGenerateModal();
+        });
+    }
     
-    document.getElementById('replace-btn')?.addEventListener('click', () => {
-        openCustomReplaceModal();
-    });
+    const replaceBtn = document.getElementById('replace-btn');
+    if (replaceBtn) {
+        replaceBtn.addEventListener('click', () => {
+            openCustomReplaceModal();
+        });
+    }
     
-    document.getElementById('close-modal')?.addEventListener('click', () => {
-        closeCustomReplaceModal();
-    });
+    const closeModal = document.getElementById('close-modal');
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            closeCustomReplaceModal();
+        });
+    }
     
-    document.getElementById('cancel-replace-btn')?.addEventListener('click', () => {
-        closeCustomReplaceModal();
-    });
+    const cancelReplaceBtn = document.getElementById('cancel-replace-btn');
+    if (cancelReplaceBtn) {
+        cancelReplaceBtn.addEventListener('click', () => {
+            closeCustomReplaceModal();
+        });
+    }
     
-    document.getElementById('confirm-replace-btn')?.addEventListener('click', async () => {
-        await confirmCustomReplace();
-    });
+    const confirmReplaceBtn = document.getElementById('confirm-replace-btn');
+    if (confirmReplaceBtn) {
+        confirmReplaceBtn.addEventListener('click', async () => {
+            await confirmCustomReplace();
+        });
+    }
     
-    document.getElementById('custom-guid-input')?.addEventListener('input', (e) => {
-        validateGuidInput(e.target.value);
-    });
+    const customGuidInput = document.getElementById('custom-guid-input');
+    if (customGuidInput) {
+        customGuidInput.addEventListener('input', (e) => {
+            validateGuidInput(e.target.value);
+        });
+        
+        customGuidInput.addEventListener('paste', (e) => {
+            setTimeout(() => {
+                const value = e.target.value;
+                validateGuidInput(value);
+            }, 0);
+        });
+    }
     
-    document.getElementById('custom-guid-input')?.addEventListener('paste', (e) => {
-        setTimeout(() => {
-            const value = e.target.value;
-            validateGuidInput(value);
-        }, 0);
-    });
-    
-    document.getElementById('close-random-modal')?.addEventListener('click', () => {
-        closeRandomGenerateModal();
-    });
-    
-    document.getElementById('cancel-random-btn')?.addEventListener('click', () => {
-        closeRandomGenerateModal();
-    });
-    
-    document.getElementById('confirm-random-btn')?.addEventListener('click', async () => {
-        await confirmRandomGenerate();
-    });
-    
-    document.querySelector('#random-generate-modal .modal')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
+    const closeRandomModal = document.getElementById('close-random-modal');
+    if (closeRandomModal) {
+        closeRandomModal.addEventListener('click', () => {
             closeRandomGenerateModal();
-        }
-    });
+        });
+    }
+    
+    const cancelRandomBtn = document.getElementById('cancel-random-btn');
+    if (cancelRandomBtn) {
+        cancelRandomBtn.addEventListener('click', () => {
+            closeRandomGenerateModal();
+        });
+    }
+    
+    const confirmRandomBtn = document.getElementById('confirm-random-btn');
+    if (confirmRandomBtn) {
+        confirmRandomBtn.addEventListener('click', async () => {
+            await confirmRandomGenerate();
+        });
+    }
+    
+    const randomModal = document.querySelector('#random-generate-modal .modal');
+    if (randomModal) {
+        randomModal.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeRandomGenerateModal();
+            }
+        });
+    }
     
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeRandomGenerateModal();
-        }
-    });
-    
-    document.querySelector('.modal')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
             closeCustomReplaceModal();
         }
     });
     
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeCustomReplaceModal();
-        }
-    });
+    const modal = document.querySelector('.modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeCustomReplaceModal();
+            }
+        });
+    }
 }
 
 function openCustomReplaceModal() {
@@ -210,6 +259,9 @@ function openCustomReplaceModal() {
     const input = document.getElementById('custom-guid-input');
     const descriptionInput = document.getElementById('custom-description-input');
     const confirmBtn = document.getElementById('confirm-replace-btn');
+    const hint = input?.parentElement?.querySelector('.input-hint');
+    
+    if (!modal || !input || !descriptionInput || !confirmBtn) return;
     
     input.value = '';
     descriptionInput.value = '';
@@ -222,30 +274,34 @@ function openCustomReplaceModal() {
 
 function closeCustomReplaceModal() {
     const modal = document.getElementById('custom-replace-modal');
-    modal.classList.remove('show');
+    if (modal) {
+        modal.classList.remove('show');
+    }
 }
 
 function validateGuidInput(value) {
     const input = document.getElementById('custom-guid-input');
     const confirmBtn = document.getElementById('confirm-replace-btn');
-    const hint = input.parentElement.querySelector('.input-hint');
+    const hint = input?.parentElement?.querySelector('.input-hint');
+    
+    if (!input || !confirmBtn || !hint) return;
     
     const guidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
     
     if (value.length === 0) {
         input.classList.remove('invalid');
         confirmBtn.disabled = true;
-        hint.textContent = '格式: 550E8400-E29B-41D4-A716-446655440000';
+        hint.textContent = _('modal.inputHint');
         hint.style.color = '#888';
     } else if (guidPattern.test(value)) {
         input.classList.remove('invalid');
         confirmBtn.disabled = false;
-        hint.textContent = '✅ 格式正确';
+        hint.textContent = _('modal.inputHintValid');
         hint.style.color = '#3fb950';
     } else {
         input.classList.add('invalid');
         confirmBtn.disabled = true;
-        hint.textContent = '❌ 格式无效，请输入有效的 GUID 格式';
+        hint.textContent = _('modal.inputHintInvalid');
         hint.style.color = '#f85149';
     }
 }
@@ -256,30 +312,31 @@ async function confirmCustomReplace() {
     const confirmBtn = document.getElementById('confirm-replace-btn');
     const statusElement = document.getElementById('operation-status');
 
+    if (!input || !descriptionInput || !confirmBtn || !statusElement) return;
+
     const newGuid = input.value.trim();
-    const description = descriptionInput.value.trim() || `自定义替换 ${new Date().toLocaleString()}`;
+    const description = descriptionInput.value.trim() || `Custom replace ${new Date().toLocaleString()}`;
 
     if (!validateGuidFormat(newGuid)) {
-        statusElement.innerHTML = '<span style="color: #f85149;">❌ 无效的 GUID 格式</span>';
+        updateStatus('error.invalidGuid');
         return;
     }
 
-    if (!confirm(`确定要将 MachineGuid 替换为:\n${newGuid}\n\n此操作将自动备份当前机器码！`)) {
+    if (!confirm(_('confirm.backupBeforeReplace'))) {
         return;
     }
 
     const permCheck = await checkPermissionBeforeWrite();
     if (!permCheck.hasPermission) {
         if (!permCheck.needRestart) {
-            statusElement.innerHTML = '<span style="color: #f85149;">❌ 权限不足，操作已取消</span>';
+            updateStatus('status.permissionRequired');
         }
         return;
     }
 
     confirmBtn.disabled = true;
-    confirmBtn.textContent = '替换中...';
-    statusElement.textContent = '正在备份并替换...';
-    statusElement.style.color = '#58a6ff';
+    confirmBtn.textContent = _('button.confirming');
+    updateStatus('status.backingUp');
 
     try {
         if (window.__TAURI__) {
@@ -292,17 +349,17 @@ async function confirmCustomReplace() {
         } else {
             const mockPreBackup = {
                 id: `backup_pre_${Date.now()}`,
-                guid: document.getElementById('machine-guid').textContent,
+                guid: document.getElementById('machine-guid')?.textContent,
                 source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
                 timestamp: Date.now() / 1000,
-                description: `替换前备份`
+                description: `Pre-replace backup`
             };
             const mockPostBackup = {
                 id: `backup_post_${Date.now()}`,
                 guid: newGuid,
                 source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
                 timestamp: Date.now() / 1000 + 1,
-                description: `自定义替换后备份: ${newGuid}`
+                description: `Custom replace backup: ${newGuid}`
             };
 
             const mockResult = {
@@ -311,11 +368,12 @@ async function confirmCustomReplace() {
                 new_guid: newGuid,
                 pre_backup: mockPreBackup,
                 post_backup: mockPostBackup,
-                message: `成功将 MachineGuid 替换为: ${newGuid}`,
+                message: `Successfully replaced MachineGuid with: ${newGuid}`,
                 error: null
             };
 
-            document.getElementById('machine-guid').textContent = newGuid;
+            const guidElement = document.getElementById('machine-guid');
+            if (guidElement) guidElement.textContent = newGuid;
             backupsData.unshift(mockPostBackup);
             displayReplaceResult(mockResult);
         }
@@ -324,11 +382,11 @@ async function confirmCustomReplace() {
         await loadBackups();
         await readMachineId();
     } catch (error) {
-        console.error('替换失败:', error);
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${error}</span>`;
+        console.error('Replace failed:', error);
+        updateStatus('error.operationFailed', { error });
     } finally {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = '确认替换';
+        confirmBtn.textContent = _('button.confirmReplace');
     }
 }
 
@@ -340,20 +398,22 @@ function validateGuidFormat(guid) {
 function displayReplaceResult(result) {
     const statusElement = document.getElementById('operation-status');
     
+    if (!statusElement) return;
+    
     if (result.success) {
         let backupInfo = '';
         if (result.pre_backup) {
-            backupInfo = `<br><small style="color: #8b949e;">📦 替换前已备份: ${result.pre_backup.id}</small>`;
+            backupInfo = `<br><small style="color: #8b949e;">📦 ${_('status.backupSuccess', { id: result.pre_backup.id })}</small>`;
         }
         if (result.post_backup) {
-            backupInfo += `<br><small style="color: #8b949e;">📦 替换后已备份: ${result.post_backup.id}</small>`;
+            backupInfo += `<br><small style="color: #8b949e;">📦 ${result.post_backup.id}</small>`;
         }
         statusElement.innerHTML = `<span style="color: #3fb950;">✅ ${result.message}</span>${backupInfo}`;
-        console.log('✅ 替换成功:', result.message);
-        console.log('📦 备份信息:', { pre_backup: result.pre_backup, post_backup: result.post_backup });
+        console.log('✅ Replace successful:', result.message);
+        console.log('📦 Backup info:', { pre_backup: result.pre_backup, post_backup: result.post_backup });
     } else {
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${result.error}</span>`;
-        console.error('❌ 替换失败:', result.error);
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ ${result.error}</span>`;
+        console.error('❌ Replace failed:', result.error);
     }
 }
 
@@ -361,18 +421,21 @@ function openRandomGenerateModal() {
     const modal = document.getElementById('random-generate-modal');
     const displayElement = document.getElementById('generated-guid-display');
     const descriptionInput = document.getElementById('random-description-input');
-    const confirmBtn = document.getElementById('confirm-random-btn');
+    
+    if (!modal || !displayElement) return;
     
     const randomGuid = generateRandomGuid();
     displayElement.textContent = randomGuid;
-    descriptionInput.value = '';
+    if (descriptionInput) descriptionInput.value = '';
     
     modal.classList.add('show');
 }
 
 function closeRandomGenerateModal() {
     const modal = document.getElementById('random-generate-modal');
-    modal.classList.remove('show');
+    if (modal) {
+        modal.classList.remove('show');
+    }
 }
 
 function generateRandomGuid() {
@@ -395,30 +458,31 @@ async function confirmRandomGenerate() {
     const confirmBtn = document.getElementById('confirm-random-btn');
     const statusElement = document.getElementById('operation-status');
 
+    if (!displayElement || !confirmBtn || !statusElement) return;
+
     const newGuid = displayElement.textContent.trim();
-    const description = descriptionInput.value.trim() || `随机生成 ${new Date().toLocaleString()}`;
+    const description = descriptionInput?.value.trim() || `Random generate ${new Date().toLocaleString()}`;
 
     if (!validateGuidFormat(newGuid)) {
-        statusElement.innerHTML = '<span style="color: #f85149;">❌ 无效的 GUID 格式</span>';
+        updateStatus('error.invalidGuid');
         return;
     }
 
-    if (!confirm(`确定要将 MachineGuid 替换为随机生成的:\n${newGuid}\n\n此操作将自动备份当前机器码！`)) {
+    if (!confirm(_('confirm.backupBeforeReplace'))) {
         return;
     }
 
     const permCheck = await checkPermissionBeforeWrite();
     if (!permCheck.hasPermission) {
         if (!permCheck.needRestart) {
-            statusElement.innerHTML = '<span style="color: #f85149;">❌ 权限不足，操作已取消</span>';
+            updateStatus('status.permissionRequired');
         }
         return;
     }
 
     confirmBtn.disabled = true;
-    confirmBtn.textContent = '替换中...';
-    statusElement.textContent = '正在备份并替换...';
-    statusElement.style.color = '#58a6ff';
+    confirmBtn.textContent = _('button.confirming');
+    updateStatus('status.backingUp');
 
     try {
         if (window.__TAURI__) {
@@ -428,19 +492,20 @@ async function confirmRandomGenerate() {
             });
             displayRandomGenerateResult(result);
         } else {
+            const guidElement = document.getElementById('machine-guid');
             const mockPreBackup = {
                 id: `backup_pre_${Date.now()}`,
-                guid: document.getElementById('machine-guid').textContent,
+                guid: guidElement?.textContent,
                 source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
                 timestamp: Date.now() / 1000,
-                description: `替换前备份`
+                description: `Pre-replace backup`
             };
             const mockPostBackup = {
                 id: `backup_post_${Date.now()}`,
                 guid: newGuid,
                 source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
                 timestamp: Date.now() / 1000 + 1,
-                description: `随机生成替换后备份: ${newGuid}`
+                description: `Random generate backup: ${newGuid}`
             };
             
             const mockResult = {
@@ -449,11 +514,11 @@ async function confirmRandomGenerate() {
                 new_guid: newGuid,
                 pre_backup: mockPreBackup,
                 post_backup: mockPostBackup,
-                message: `成功生成并替换 MachineGuid: ${newGuid}`,
+                message: `Successfully generated and replaced MachineGuid: ${newGuid}`,
                 error: null
             };
             
-            document.getElementById('machine-guid').textContent = newGuid;
+            if (guidElement) guidElement.textContent = newGuid;
             backupsData.unshift(mockPostBackup);
             displayRandomGenerateResult(mockResult);
         }
@@ -462,31 +527,33 @@ async function confirmRandomGenerate() {
         await loadBackups();
         await readMachineId();
     } catch (error) {
-        console.error('随机生成替换失败:', error);
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 替换失败: ${error}</span>`;
+        console.error('Random generate failed:', error);
+        updateStatus('error.operationFailed', { error });
     } finally {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = '确认替换';
+        confirmBtn.textContent = _('button.confirmReplace');
     }
 }
 
 function displayRandomGenerateResult(result) {
     const statusElement = document.getElementById('operation-status');
     
+    if (!statusElement) return;
+    
     if (result.success) {
         let backupInfo = '';
         if (result.pre_backup) {
-            backupInfo = `<br><small style="color: #8b949e;">📦 替换前已备份: ${result.pre_backup.id}</small>`;
+            backupInfo = `<br><small style="color: #8b949e;">📦 ${result.pre_backup.id}</small>`;
         }
         if (result.post_backup) {
-            backupInfo += `<br><small style="color: #8b949e;">📦 替换后已备份: ${result.post_backup.id}</small>`;
+            backupInfo += `<br><small style="color: #8b949e;">📦 ${result.post_backup.id}</small>`;
         }
         statusElement.innerHTML = `<span style="color: #3fb950;">✅ ${result.message}</span>${backupInfo}`;
-        console.log('✅ 随机生成成功:', result.message);
-        console.log('📦 备份信息:', { pre_backup: result.pre_backup, post_backup: result.post_backup });
+        console.log('✅ Random generation successful:', result.message);
+        console.log('📦 Backup info:', { pre_backup: result.pre_backup, post_backup: result.post_backup });
     } else {
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 随机生成失败: ${result.error}</span>`;
-        console.error('❌ 随机生成失败:', result.error);
+        statusElement.innerHTML = `<span style="color: #f85149;">❌ ${result.error}</span>`;
+        console.error('❌ Random generation failed:', result.error);
     }
 }
 
@@ -494,10 +561,12 @@ async function readMachineId() {
     const displayElement = document.getElementById('machine-guid');
     const button = document.getElementById('read-btn');
     
+    if (!displayElement || !button) return;
+    
     try {
         button.disabled = true;
-        button.textContent = '读取中...';
-        displayElement.textContent = '正在读取...';
+        button.textContent = _('button.reading');
+        displayElement.textContent = _('status.reading');
         
         if (window.__TAURI__) {
             const { invoke } = window.__TAURI__.core;
@@ -512,25 +581,27 @@ async function readMachineId() {
             });
         }
     } catch (error) {
-        console.error('读取机器码失败:', error);
-        displayElement.innerHTML = `<span style="color: #f85149;">错误: ${error}</span>`;
+        console.error('Failed to read MachineGuid:', error);
+        displayElement.innerHTML = `<span style="color: #f85149;">${_('error.readFailed', { error })}</span>`;
     } finally {
         button.disabled = false;
-        button.textContent = '读取机器码';
+        button.textContent = _('button.read');
     }
 }
 
 function displayMachineId(result) {
     const displayElement = document.getElementById('machine-guid');
     
+    if (!displayElement) return;
+    
     if (result.success) {
         displayElement.textContent = result.guid;
         displayElement.style.color = '#58a6ff';
-        console.log('✅ MachineGuid 读取成功:', result.guid);
-        console.log('📍 来源:', result.source);
+        console.log('✅ MachineGuid read successfully:', result.guid);
+        console.log('📍 Source:', result.source);
     } else {
-        displayElement.innerHTML = `<span style="color: #f85149;">读取失败: ${result.error}</span>`;
-        console.error('❌ MachineGuid 读取失败:', result.error);
+        displayElement.innerHTML = `<span style="color: #f85149;">${_('error.readFailed', { error: result.error })}</span>`;
+        console.error('❌ MachineGuid read failed:', result.error);
     }
 }
 
@@ -538,25 +609,28 @@ async function backupMachineGuid() {
     const backupBtn = document.getElementById('backup-btn');
     const statusElement = document.getElementById('operation-status');
     
+    if (!backupBtn || !statusElement) return;
+    
     try {
         backupBtn.disabled = true;
-        backupBtn.textContent = '备份中...';
-        statusElement.textContent = '正在备份...';
+        backupBtn.textContent = _('button.backingUp');
+        statusElement.textContent = _('status.backingUp');
         statusElement.style.color = '#58a6ff';
         
         if (window.__TAURI__) {
             const { invoke } = window.__TAURI__.core;
-            const result = await invoke('backup_machine_guid', { description: `备份 ${new Date().toLocaleString()}` });
+            const result = await invoke('backup_machine_guid', { description: `Backup ${new Date().toLocaleString()}` });
             displayBackupResult(result);
         } else {
+            const guidElement = document.getElementById('machine-guid');
             const mockBackup = {
                 success: true,
                 backup: {
                     id: `backup_${Date.now()}`,
-                    guid: document.getElementById('machine-guid').textContent,
+                    guid: guidElement?.textContent,
                     source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
                     timestamp: Date.now() / 1000,
-                    description: `备份 ${new Date().toLocaleString()}`
+                    description: `Backup ${new Date().toLocaleString()}`
                 },
                 error: null
             };
@@ -566,32 +640,33 @@ async function backupMachineGuid() {
         
         await loadBackups();
     } catch (error) {
-        console.error('备份失败:', error);
-        statusElement.innerHTML = `<span style="color: #f85149;">备份失败: ${error}</span>`;
+        console.error('Backup failed:', error);
+        statusElement.innerHTML = `<span style="color: #f85149;">${_('error.backupFailed', { error })}</span>`;
     } finally {
         backupBtn.disabled = false;
-        backupBtn.textContent = '备份机器码';
+        backupBtn.textContent = _('button.backup');
     }
 }
 
 function displayBackupResult(result) {
     const statusElement = document.getElementById('operation-status');
+    if (!statusElement) return;
 
     if (result.success) {
         if (result.backup) {
-            statusElement.innerHTML = `<span style="color: #3fb950;">✅ 备份成功! ID: ${result.backup.id}</span>`;
-            console.log('✅ 备份成功:', result.backup);
+            statusElement.innerHTML = `<span style="color: #3fb950;">${_('status.backupSuccess', { id: result.backup.id })}</span>`;
+            console.log('✅ Backup successful:', result.backup);
         } else if (result.skipped) {
-            statusElement.innerHTML = `<span style="color: #f9c440;">⏭️ 已存在相同机器码备份，跳过备份</span>`;
-            console.log('⏭️ 跳过重复备份');
+            statusElement.innerHTML = `<span style="color: #f9c440;">${_('status.backupSkipped')}</span>`;
+            console.log('⏭️ Skipped duplicate backup');
         } else {
-            statusElement.innerHTML = `<span style="color: #f9c440;">⚠️ 未创建备份（可能已存在）</span>`;
-            console.log('⚠️ 未创建备份');
+            statusElement.innerHTML = `<span style="color: #f9c440;">${_('status.noBackup')}</span>`;
+            console.log('⚠️ No backup created');
         }
     } else {
-        const errorMsg = result.error || '未知错误';
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 备份失败: ${errorMsg}</span>`;
-        console.error('❌ 备份失败:', errorMsg);
+        const errorMsg = result.error || 'Unknown error';
+        statusElement.innerHTML = `<span style="color: #f85149;">${_('error.backupFailed', { error: errorMsg })}</span>`;
+        console.error('❌ Backup failed:', errorMsg);
     }
 }
 
@@ -614,7 +689,7 @@ async function loadBackups() {
             });
         }
     } catch (error) {
-        console.error('加载备份列表失败:', error);
+        console.error('Failed to load backups:', error);
     }
 }
 
@@ -625,7 +700,7 @@ function loadBackupsMock() {
             guid: '550E8400-E29B-41D4-A716-446655440000',
             source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
             timestamp: 1737950000,
-            description: '初始备份'
+            description: 'Initial backup'
         }
     ];
 }
@@ -638,21 +713,22 @@ function displayBackupList(result) {
     if (result.success && result.backups.length > 0) {
         listElement.innerHTML = result.backups.map(backup => {
             const date = new Date(backup.timestamp * 1000).toLocaleString();
+            const description = backup.description || _('backup.noDescription');
             return `
                 <div class="backup-item" data-id="${backup.id}">
                     <div class="backup-info">
                         <div class="backup-guid">${backup.guid}</div>
-                        <div class="backup-meta">${date} - ${backup.description || '无描述'}</div>
+                        <div class="backup-meta">${date} - ${description}</div>
                     </div>
                     <div class="backup-actions">
-                        <button class="copy-backup-btn" data-guid="${backup.guid}" title="复制机器码">
+                        <button class="copy-backup-btn" data-guid="${backup.guid}" title="${_('tooltip.copyGuid')}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                             </svg>
                         </button>
-                        <button class="restore-backup-btn" data-id="${backup.id}" data-guid="${backup.guid}" title="恢复此机器码">恢复此机器码</button>
-                        <button class="delete-backup-btn" data-id="${backup.id}" title="删除备份">删除</button>
+                        <button class="restore-backup-btn" data-id="${backup.id}" data-guid="${backup.guid}" title="${_('backup.restoreTitle')}">${_('button.restore')}</button>
+                        <button class="delete-backup-btn" data-id="${backup.id}" title="${_('backup.deleteTitle')}">${_('button.delete')}</button>
                     </div>
                 </div>
             `;
@@ -667,7 +743,7 @@ function displayBackupList(result) {
         
         listElement.querySelectorAll('.delete-backup-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const id = e.target.dataset.id;
+                const id = e.currentTarget.dataset.id;
                 await deleteBackup(id);
             });
         });
@@ -679,7 +755,7 @@ function displayBackupList(result) {
             });
         });
     } else {
-        listElement.innerHTML = '<div class="backup-item"><div class="backup-info">暂无备份</div></div>';
+        listElement.innerHTML = `<div class="backup-item"><div class="backup-info">${_('backup.noBackups')}</div></div>`;
     }
 }
 
@@ -689,11 +765,11 @@ async function copyToClipboard(text) {
     try {
         if (navigator.clipboard && window.__TAURI__) {
             await navigator.clipboard.writeText(text);
-            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 已复制到剪贴板</span>';
+            updateStatus('status.copied');
         } else if (window.__TAURI__) {
             const { writeText } = window.__TAURI__.clipboard;
             await writeText(text);
-            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 已复制到剪贴板</span>';
+            updateStatus('status.copied');
         } else {
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -703,17 +779,17 @@ async function copyToClipboard(text) {
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 已复制到剪贴板</span>';
+            updateStatus('status.copied');
         }
-        console.log('✅ 已复制到剪贴板:', text);
+        console.log('✅ Copied to clipboard:', text);
     } catch (error) {
-        console.error('复制失败:', error);
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 复制失败: ${error}</span>`;
+        console.error('Copy failed:', error);
+        updateStatus('error.copyFailed', { error });
     }
 }
 
 async function deleteBackup(id) {
-    if (!confirm('确定要删除此备份吗？')) return;
+    if (!confirm(_('confirm.deleteBackup'))) return;
     
     const statusElement = document.getElementById('operation-status');
     
@@ -723,39 +799,39 @@ async function deleteBackup(id) {
             const result = await invoke('delete_backup_by_id', { id });
             
             if (result.success) {
-                statusElement.innerHTML = '<span style="color: #3fb950;">✅ 备份已删除</span>';
+                updateStatus('status.deleted');
                 await loadBackups();
             } else {
-                statusElement.innerHTML = `<span style="color: #f85149;">❌ 删除失败: ${result.error}</span>`;
+                updateStatus('error.deleteFailed', { error: result.error });
             }
         } else {
             backupsData = backupsData.filter(b => b.id !== id);
-            statusElement.innerHTML = '<span style="color: #3fb950;">✅ 备份已删除</span>';
+            updateStatus('status.deleted');
             await loadBackups();
         }
     } catch (error) {
-        console.error('删除备份失败:', error);
-        statusElement.innerHTML = `<span style="color: #f85149;">删除失败: ${error}</span>`;
+        console.error('Failed to delete backup:', error);
+        updateStatus('error.deleteFailed', { error });
     }
 }
 
 async function restoreBackup(id, guid) {
     const statusElement = document.getElementById('operation-status');
 
-    if (!confirm(`确定要恢复该备份机器码到系统吗？\n\n备份ID: ${id}\n机器码: ${guid}\n\n将先自动备份当前机器码，再执行恢复。`)) {
+    if (!confirm(_('confirm.backupBeforeRestore'))) {
         return;
     }
 
     const permCheck = await checkPermissionBeforeWrite();
     if (!permCheck.hasPermission) {
         if (!permCheck.needRestart) {
-            statusElement.innerHTML = '<span style="color: #f85149;">❌ 权限不足，操作已取消</span>';
+            updateStatus('status.permissionRequired');
         }
         return;
     }
 
     try {
-        statusElement.textContent = '正在备份并恢复...';
+        statusElement.textContent = _('status.restoring');
         statusElement.style.color = '#58a6ff';
 
         if (window.__TAURI__) {
@@ -763,11 +839,11 @@ async function restoreBackup(id, guid) {
             const result = await invoke('restore_backup_by_id_command', { id });
 
             if (!result.success) {
-                statusElement.innerHTML = `<span style="color: #f85149;">❌ 恢复失败: ${result.error}</span>`;
+                statusElement.innerHTML = `<span style="color: #f85149;">${_('error.restoreFailed', { error: result.error })}</span>`;
                 return;
             }
 
-            statusElement.innerHTML = `<span style="color: #3fb950;">✅ 已恢复: ${result.restored_guid}</span>`;
+            statusElement.innerHTML = `<span style="color: #3fb950;">${_('status.restored', { guid: result.restored_guid })}</span>`;
             await loadBackups();
             await readMachineId();
 
@@ -776,42 +852,43 @@ async function restoreBackup(id, guid) {
             const restoredFrom = result.restored_from;
 
             alert(
-                `恢复完成\n\n` +
-                `恢复前机器码: ${result.previous_guid}\n` +
-                `恢复后机器码: ${result.restored_guid}\n\n` +
-                `恢复来源备份: ${restoredFrom?.id || id}\n` +
-                `来源机器码: ${restoredFrom?.guid || guid}\n\n` +
-                `已自动备份当前机器码\n` +
-                `备份ID: ${preBackup?.id || '-'}\n` +
-                `备份时间: ${preBackupTime}`
+                `Restore Complete\n\n` +
+                `Previous MachineGuid: ${result.previous_guid}\n` +
+                `Restored MachineGuid: ${result.restored_guid}\n\n` +
+                `Source Backup: ${restoredFrom?.id || id}\n` +
+                `Source MachineGuid: ${restoredFrom?.guid || guid}\n\n` +
+                `Current MachineGuid has been backed up\n` +
+                `Backup ID: ${preBackup?.id || '-'}\n` +
+                `Backup Time: ${preBackupTime}`
             );
         } else {
-            const previousGuid = document.getElementById('machine-guid').textContent;
+            const guidElement = document.getElementById('machine-guid');
+            const previousGuid = guidElement?.textContent;
             const preBackup = {
                 id: `backup_${Date.now()}`,
                 guid: previousGuid,
                 source: 'HKLM\\SOFTWARE\\Microsoft\\Cryptography',
                 timestamp: Date.now() / 1000,
-                description: `恢复前自动备份: 从备份 ${id} 恢复到 ${guid}`
+                description: `Auto backup before restore: From backup ${id} to ${guid}`
             };
             backupsData.unshift(preBackup);
-            document.getElementById('machine-guid').textContent = guid;
-            statusElement.innerHTML = `<span style="color: #3fb950;">✅ 已恢复: ${guid}</span>`;
+            if (guidElement) guidElement.textContent = guid;
+            statusElement.innerHTML = `<span style="color: #3fb950;">${_('status.restored', { guid })}</span>`;
             await loadBackups();
 
             alert(
-                `恢复完成\n\n` +
-                `恢复前机器码: ${previousGuid}\n` +
-                `恢复后机器码: ${guid}\n\n` +
-                `恢复来源备份: ${id}\n` +
-                `来源机器码: ${guid}\n\n` +
-                `已自动备份当前机器码\n` +
-                `备份ID: ${preBackup.id}\n` +
-                `备份时间: ${new Date(preBackup.timestamp * 1000).toLocaleString()}`
+                `Restore Complete\n\n` +
+                `Previous MachineGuid: ${previousGuid}\n` +
+                `Restored MachineGuid: ${guid}\n\n` +
+                `Source Backup: ${id}\n` +
+                `Source MachineGuid: ${guid}\n\n` +
+                `Current MachineGuid has been backed up\n` +
+                `Backup ID: ${preBackup.id}\n` +
+                `Backup Time: ${new Date(preBackup.timestamp * 1000).toLocaleString()}`
             );
         }
     } catch (error) {
-        console.error('恢复失败:', error);
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 恢复失败: ${error}</span>`;
+        console.error('Restore failed:', error);
+        statusElement.innerHTML = `<span style="color: #f85149;">${_('error.restoreFailed', { error })}</span>`;
     }
 }

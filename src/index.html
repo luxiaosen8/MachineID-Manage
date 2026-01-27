@@ -3,72 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MachineID-Manage</title>
+    <title data-i18n="app.title">MachineID-Manage</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
         <header>
-            <h1>MachineID-Manage</h1>
-            <p class="subtitle">Windows 机器码管理器</p>
+            <h1 data-i18n="header.title">MachineID-Manage</h1>
+            <p class="subtitle" data-i18n="header.subtitle">Windows 机器码管理器</p>
         </header>
         
         <main>
             <section class="current-id">
-                <h2>当前 MachineGuid</h2>
+                <h2 data-i18n="section.currentId">当前 MachineGuid</h2>
                 <div class="id-display">
-                    <code id="machine-guid">加载中...</code>
+                    <code id="machine-guid" data-i18n-html="status.loading">加载中...</code>
                 </div>
-                <button id="read-btn">读取机器码</button>
+                <button id="read-btn" data-i18n="button.read">读取机器码</button>
             </section>
             
             <section class="actions">
-                <h2>管理操作</h2>
+                <h2 data-i18n="section.actions">管理操作</h2>
                 <div class="button-group">
-                    <button id="backup-btn">备份机器码</button>
-                    <button id="generate-btn">随机生成</button>
-                    <button id="replace-btn">自定义替换</button>
+                    <button id="backup-btn" data-i18n="button.backup">备份机器码</button>
+                    <button id="generate-btn" data-i18n="button.generate">随机生成</button>
+                    <button id="replace-btn" data-i18n="button.replace">自定义替换</button>
                 </div>
             </section>
             
             <section class="backups">
-                <h2>备份列表</h2>
+                <h2 data-i18n="section.backups">备份列表</h2>
                 <div id="backup-list" class="backup-list">
                     <div class="backup-item">
-                        <div class="backup-info">暂无备份</div>
+                        <div class="backup-info" data-i18n="backup.noBackups">暂无备份</div>
                     </div>
                 </div>
             </section>
             
             <section class="status">
-                <h2>操作状态</h2>
-                <p id="operation-status">准备就绪</p>
+                <h2 data-i18n="section.status">操作状态</h2>
+                <p id="operation-status" data-i18n="status.ready">准备就绪</p>
             </section>
         </main>
         
         <footer>
-            <p class="warning">⚠️ 修改注册表前请备份您的数据</p>
-            <p class="version">版本 0.1.0</p>
+            <p class="warning" data-i18n="footer.warning">⚠️ 修改注册表前请备份您的数据</p>
+            <p class="version" data-i18n="footer.version" data-i18n-attr="textContent">版本 0.1.0</p>
         </footer>
     </div>
     
     <div id="custom-replace-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="close-modal">&times;</span>
-            <h2>自定义替换 MachineGuid</h2>
-            <p class="modal-warning">⚠️ 替换前将自动备份当前机器码</p>
+            <h2 data-i18n="modal.customReplaceTitle">自定义替换 MachineGuid</h2>
+            <p class="modal-warning" data-i18n="modal.warning">⚠️ 替换前将自动备份当前机器码</p>
             <div class="form-group">
-                <label for="custom-guid-input">新的 MachineGuid</label>
+                <label for="custom-guid-input" data-i18n="modal.inputGuidLabel">新的 MachineGuid</label>
                 <input type="text" id="custom-guid-input" placeholder="550E8400-E29B-41D4-A716-446655440000" maxlength="36">
-                <p class="input-hint">格式: 550E8400-E29B-41D4-A716-446655440000</p>
+                <p class="input-hint" data-i18n="modal.inputHint">格式: 550E8400-E29B-41D4-A716-446655440000</p>
             </div>
             <div class="form-group">
-                <label for="custom-description-input">描述 (可选)</label>
+                <label for="custom-description-input" data-i18n="modal.descriptionLabel">描述 (可选)</label>
                 <input type="text" id="custom-description-input" placeholder="为什么要替换这个机器码">
             </div>
             <div class="modal-actions">
-                <button id="cancel-replace-btn" class="cancel-btn">取消</button>
-                <button id="confirm-replace-btn" class="danger-btn">确认替换</button>
+                <button id="cancel-replace-btn" class="cancel-btn" data-i18n="button.cancel">取消</button>
+                <button id="confirm-replace-btn" class="danger-btn" data-i18n="button.confirmReplace">确认替换</button>
             </div>
         </div>
     </div>
@@ -76,23 +76,24 @@
     <div id="random-generate-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="close-random-modal">&times;</span>
-            <h2>随机生成 MachineGuid</h2>
-            <p class="modal-warning">⚠️ 生成前将自动备份当前机器码</p>
+            <h2 data-i18n="modal.randomGenerateTitle">随机生成 MachineGuid</h2>
+            <p class="modal-warning" data-i18n="modal.warning">⚠️ 生成前将自动备份当前机器码</p>
             <div class="form-group">
-                <label>生成的 MachineGuid</label>
+                <label data-i18n="modal.inputGuidLabel">新的 MachineGuid</label>
                 <div id="generated-guid-display" class="guid-display">-</div>
             </div>
             <div class="form-group">
-                <label for="random-description-input">描述 (可选)</label>
+                <label for="random-description-input" data-i18n="modal.descriptionLabel">描述 (可选)</label>
                 <input type="text" id="random-description-input" placeholder="随机生成的新机器码">
             </div>
             <div class="modal-actions">
-                <button id="cancel-random-btn" class="cancel-btn">取消</button>
-                <button id="confirm-random-btn" class="danger-btn">确认替换</button>
+                <button id="cancel-random-btn" class="cancel-btn" data-i18n="button.cancel">取消</button>
+                <button id="confirm-random-btn" class="danger-btn" data-i18n="button.confirmReplace">确认替换</button>
             </div>
         </div>
     </div>
     
+    <script src="i18n/index.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
