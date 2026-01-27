@@ -1,14 +1,12 @@
-﻿# MachineID-Manage / 机器码管理器
+﻿# MachineID-Manage
 
 <div align="center">
 
 ![MachineID-Manage](src-tauri/icons/icon.png)
 
-**English** | [中文](#中文说明)
+**[English](README.md)** | **[中文](README.zh-CN.md)**
 
 *A Windows MachineGuid Manager built with Rust + Tauri 2*
-
-*基于 Rust + Tauri 2 的 Windows 机器码管理器*
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
@@ -19,149 +17,137 @@
 
 ---
 
-## 项目简介 / Project Overview
+## Overview
 
-### English
-
-MachineID-Manage is a Windows MachineGuid management tool developed primarily using **Rust + Tauri 2**. It enables users to read, backup, replace, and randomly generate Windows MachineGuid identifiers. The application provides a user-friendly graphical interface for performing system registry operations safely and efficiently.
+MachineID-Manage is a Windows MachineGuid management tool developed using **Rust + Tauri 2**. It enables users to read, backup, replace, and randomly generate Windows MachineGuid identifiers. The application provides a user-friendly graphical interface for performing system registry operations safely and efficiently.
 
 This project was entirely developed by **AI** and cannot guarantee complete functionality or freedom from bugs. Testing has been primarily conducted on **Windows 11**, and compatibility with other Windows versions is not guaranteed.
 
-### 中文
+---
 
-MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码管理工具。它使能够读取、备份、替换和随机生成 Windows MachineGuid（机器码标识符）。该应用程序提供友好的图形界面，帮助用户安全高效地执行系统注册表操作。
+## Features
 
-本项目**全程由 AI 开发**，无法保证功能性完善及无 BUG。项目已在 **Windows 11** 下测试有效，其他系统版本请自行测试。
+| Icon | Feature | Description |
+|:----:|---------|-------------|
+| 📖 | Read MachineGuid | Read MachineGuid from Windows Registry |
+| 💾 | Backup Management | Backup and manage machine ID configurations |
+| 🔄 | Restore Backup | Restore machine ID from previous backups |
+| 🎲 | Random Generation | Generate random valid GUIDs |
+| 🔧 | Custom Replace | Replace with custom MachineGuid values |
+| 📋 | Copy Function | One-click copy to clipboard |
 
 ---
 
-## 功能特性 / Features
+## Quick Start
 
-| Feature | 功能 | Description | 说明 |
-|---------|------|-------------|------|
-| 📖 | 读取机器码 | Read MachineGuid from Windows Registry | 从 Windows 注册表读取 MachineGuid |
-| 💾 | 备份管理 | Backup and manage machine IDs | 备份和管理机器码配置 |
-| 🔄 | 恢复备份 | Restore machine ID from backup | 从备份恢复机器码 |
-| 🎲 | 随机生成 | Generate random valid GUID | 生成随机有效的 GUID |
-| 🔧 | 自定义替换 | Replace with custom MachineGuid | 使用自定义机器码替换 |
-| 📋 | 复制功能 | One-click copy to clipboard | 一键复制机器码到剪贴板 |
+### System Requirements
 
----
+| Requirement | Details |
+|-------------|---------|
+| Operating System | Windows 10/11 |
+| Rust | Version 1.70+ |
+| Node.js | Version 18+ (for development) |
+| Administrator Rights | Required for registry modification |
 
-## 使用说明 / Usage Guide
-
-### 系统要求 / System Requirements
-
-| Requirement | 要求 | Details | 详情 |
-|-------------|------|---------|------|
-| Operating System | 操作系统 | Windows 10/11 | Windows 10/11 |
-| Rust | Rust | Version 1.70+ | 1.70 或更高版本 |
-| Node.js | Node.js | Version 18+ (for development) | 18+（用于开发） |
-| Administrator Rights | 管理员权限 | Required for registry modification | 修改注册表时需要 |
-
-### 快速开始 / Quick Start
+### Installation
 
 ```bash
-# 1. 克隆仓库 / Clone the repository
+# Clone the repository
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
 cd MachineID-Manage
 
-# 2. 安装依赖 / Install dependencies
+# Install dependencies
 npm install
 
-# 3. 启动开发服务器 / Start development server
+# Start development server
 cargo tauri dev
 
-# 4. 构建生产版本 / Build production version
+# Build production version
 cargo tauri build
 ```
 
-### 操作说明 / Operations Guide
+### Operations Guide
 
-1. **读取机器码** - 点击"读取机器码"按钮获取当前 MachineGuid
-2. **备份机器码** - 点击"备份"保存当前机器码到本地存储
-3. **随机生成** - 点击"随机生成"创建新的随机 GUID 并替换
-4. **自定义替换** - 输入有效的 GUID 格式并确认替换
-5. **恢复备份** - 在备份列表中选择备份并点击恢复
+1. **Read MachineGuid** - Click "Read MachineGuid" to get the current MachineGuid
+2. **Backup** - Click "Backup" to save the current machine ID to local storage
+3. **Random Generate** - Click "Random Generate" to create and replace with a new random GUID
+4. **Custom Replace** - Enter a valid GUID format and confirm replacement
+5. **Restore Backup** - Select a backup from the list and click restore
 
 ---
 
-## 项目结构 / Project Structure
+## Project Structure
 
 ```
 MachineID-Manage/
-├── src-tauri/                # Tauri 后端 (Rust)
+├── src-tauri/                # Tauri backend (Rust)
 │   ├── src/
-│   │   ├── main.rs          # Tauri 命令入口 / Command entry point
-│   │   └── machine_id.rs    # 机器码读写逻辑 / Machine ID operations
-│   ├── Cargo.toml           # Rust 依赖配置
-│   ├── tauri.conf.json      # Tauri 配置
-│   └── icons/               # 应用图标
-├── src/                     # 前端源码
-│   ├── index.html           # 主页面 / Main page
-│   ├── style.css            # 样式文件 / Styles
-│   └── script.js            # 交互逻辑 / Client-side logic
-├── tests/                   # 测试文件
-├── README.md                # 项目说明
-├── LICENSE                  # 开源协议
-└── .github/
-    └── workflows/           # GitHub Actions
+│   │   ├── main.rs          # Tauri command entry point
+│   │   └── machine_id.rs    # Machine ID read/write operations
+│   ├── Cargo.toml           # Rust dependencies configuration
+│   ├── tauri.conf.json      # Tauri configuration
+│   └── icons/               # Application icons
+├── src/                     # Frontend source code
+│   ├── index.html           # Main page
+│   ├── style.css            # Styles
+│   └── script.js            # Client-side logic
+├── tests/                   # Test files
+├── README.md                # Project documentation (English)
+├── README.zh-CN.md          # 项目说明（中文）
+├── CONTRIBUTING.md          # Contribution guidelines
+├── LICENSE                  # MIT License
+├── .github/
+│   └── workflows/           # GitHub Actions CI/CD
 ```
 
 ---
 
-## 技术栈 / Tech Stack
+## Tech Stack
 
-- **Rust** - 系统编程语言
-- **Tauri 2** - 跨平台应用框架
-- **Windows Registry** - 系统注册表操作 (winreg crate)
-- **HTML/CSS/JavaScript** - 前端界面
+- **Rust** - Systems programming language
+- **Tauri 2** - Cross-platform application framework
+- **Windows Registry** - System registry operations (winreg crate)
+- **HTML/CSS/JavaScript** - Frontend interface
 
 ---
 
-## 安全注意事项 / Security Notes
+## Security Notes
 
-> **警告 / WARNING**
+> **WARNING**
 >
 > Modifying the Windows Registry carries inherent risks. Always create system backups before performing any operations.
->
-> 修改 Windows 注册表存在固有风险。执行任何操作前，请务必创建系统备份。
 
-### 安全措施 / Security Measures
+### Security Measures
 
-| Measure | 措施 | Description | 说明 |
-|---------|------|-------------|------|
-| 🔒 | 权限检测 | Check administrator rights before write operations | 写入操作前检测管理员权限 |
-| 💾 | 自动备份 | Automatic backup before modification | 修改前自动备份 |
-| ✅ | 用户确认 | Require user confirmation for dangerous operations | 危险操作需要用户确认 |
-| 📝 | 操作日志 | Log all registry modifications | 记录所有注册表修改操作 |
-| 🔍 | 输入验证 | Validate GUID format before writing | 写入前验证 GUID 格式 |
+| Icon | Measure | Description |
+|:----:|---------|-------------|
+| 🔒 | Permission Check | Check administrator rights before write operations |
+| 💾 | Auto Backup | Automatic backup before modification |
+| ✅ | User Confirmation | Require user confirmation for dangerous operations |
+| 📝 | Operation Log | Log all registry modifications |
+| 🔍 | Input Validation | Validate GUID format before writing |
 
-### 安全建议 / Security Recommendations
+### Security Recommendations
 
-1. **Always backup** - 使用前导出并保存当前 MachineGuid
-2. **Test first** - 在测试环境验证操作效果
-3. **Minimal permissions** - 仅在需要时授予管理员权限
+1. **Always backup** - Export and save the current MachineGuid before use
+2. **Test first** - Verify operation effects in a test environment
+3. **Minimal permissions** - Only grant administrator rights when necessary
 
 ---
 
-## 贡献 / Contributing
+## Contributing
 
-欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
-
-### 贡献者 / Contributors
-
-感谢所有贡献者！
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
-## 开源协议 / License
+## License
 
-本项目采用 MIT 协议开源。详情请阅读 [LICENSE](LICENSE) 文件。
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-## 联系方式 / Contact
+## Contact
 
 - **GitHub**: [https://github.com/luxiaosen8/MachineID-Manage](https://github.com/luxiaosen8/MachineID-Manage)
 - **Issues**: [https://github.com/luxiaosen8/MachineID-Manage/issues](https://github.com/luxiaosen8/MachineID-Manage/issues)
@@ -170,8 +156,6 @@ MachineID-Manage/
 
 <div align="center">
 
-**感谢使用 MachineID-Manage！**
-
-*Thank you for using MachineID-Manage!*
+**Thank you for using MachineID-Manage!**
 
 </div>

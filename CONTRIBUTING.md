@@ -1,5 +1,7 @@
 # 贡献指南 / Contributing Guidelines
 
+**[English](README.md)** | **[中文](README.zh-CN.md)**
+
 感谢您对 MachineID-Manage 项目的兴趣！我们欢迎各种形式的贡献，包括但不限于：
 
 - 🐛 报告 Bug

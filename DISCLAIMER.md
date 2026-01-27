@@ -1,5 +1,7 @@
 # 免责声明 / Disclaimer
 
+**[English](README.md)** | **[中文](README.zh-CN.md)**
+
 **最后更新 / Last Updated**: 2026-01-27
 
 ---
