@@ -1,226 +1,182 @@
-# 贡献指南
+﻿# 璐＄尞鎸囧崡
 
-感谢您对 MachineID-Manage 项目的兴趣！我们欢迎各种形式的贡献，包括但不限于：
+鎰熻阿鎮ㄥ MachineID-Manage 椤圭洰鐨勫叴瓒ｏ紒鎴戜滑娆㈣繋鍚勭褰㈠紡鐨勮础鐚紝鍖呮嫭浣嗕笉闄愪簬锛?
+- 馃悰 鎶ュ憡 Bug
+- 馃挕 鎻愬嚭鏂板姛鑳藉缓璁?- 馃摑 鏀硅繘鏂囨。
+- 馃敡 鎻愪氦浠ｇ爜淇
+- 鉁?娣诲姞鏂板姛鑳?- 馃帹 鏀硅繘鐢ㄦ埛鐣岄潰
+- 馃寪 缈昏瘧鏂囨。
 
-- 🐛 报告 Bug
-- 💡 提出新功能建议
-- 📝 改进文档
-- 🔧 提交代码修复
-- ✨ 添加新功能
-- 🎨 改进用户界面
-- 🌐 翻译文档
+## 鐩綍
 
-## 目录
-
-1. [行为准则](#行为准则)
-2. [如何贡献](#如何贡献)
-3. [开发环境设置](#开发环境设置)
-4. [提交规范](#提交规范)
-5. [代码审查流程](#代码审查流程)
-6. [社区资源](#社区资源)
+1. [琛屼负鍑嗗垯](#琛屼负鍑嗗垯)
+2. [濡備綍璐＄尞](#濡備綍璐＄尞)
+3. [寮€鍙戠幆澧冭缃甝(#寮€鍙戠幆澧冭缃?
+4. [鎻愪氦瑙勮寖](#鎻愪氦瑙勮寖)
+5. [浠ｇ爜瀹℃煡娴佺▼](#浠ｇ爜瀹℃煡娴佺▼)
+6. [绀惧尯璧勬簮](#绀惧尯璧勬簮)
 
 ---
 
-## 行为准则
+## 琛屼负鍑嗗垯
 
-我们承诺为社区提供一个友好、安全、包容的环境。请遵守以下准则：
+鎴戜滑鎵胯涓虹ぞ鍖烘彁渚涗竴涓弸濂姐€佸畨鍏ㄣ€佸寘瀹圭殑鐜銆傝閬靛畧浠ヤ笅鍑嗗垯锛?
+### 鏈熸湜鐨勮涓?- 浣跨敤娆㈣繋鍜屽寘瀹圭殑璇█
+- 灏婇噸涓嶅悓鐨勮鐐瑰拰缁忓巻
+- 浼橀泤鍦版帴鍙楀缓璁炬€ф壒璇?- 鍏虫敞瀵圭ぞ鍖烘渶鏈夊埄鐨勪簨鎯?- 瀵瑰叾浠栫ぞ鍖烘垚鍛樿〃鐜板嚭鍚岀悊蹇?
+### 涓嶅彲鎺ュ彈鐨勮涓?- 浣跨敤鎬у埆姝ц鐨勮瑷€鎴栧浘鍍?- 璺熻釜鎴栭獨鎵颁换浣曚汉
+- 鍙戝竷浠栦汉鐨勭浜轰俊鎭?- 浠讳綍褰㈠紡鐨勬瑙嗐€侀獨鎵版垨璐綆
 
-### 期望的行为
-- 使用欢迎和包容的语言
-- 尊重不同的观点和经历
-- 优雅地接受建设性批评
-- 关注对社区最有利的事情
-- 对其他社区成员表现出同理心
+## 濡備綍璐＄尞
 
-### 不可接受的行为
-- 使用性别歧视的语言或图像
-- 跟踪或骚扰任何人
-- 发布他人的私人信息
-- 任何形式的歧视、骚扰或贬低
+### 鎶ュ憡 Bug
 
-## 如何贡献
+鍦ㄦ姤鍛?Bug 涔嬪墠锛岃锛?1. 鎼滅储鐜版湁 Issues锛岀‘璁ら棶棰樺皻鏈姤鍛?2. 浣跨敤鏈€鏂扮殑绋冲畾鐗堟湰
+3. 鍑嗗澶嶇幇 Bug 鐨勮缁嗘楠?
+Bug 鎶ュ憡搴斿寘鍚細
+- 娓呮櫚鐨勯棶棰樻弿杩?- 澶嶇幇姝ラ锛?銆?銆?...锛?- 棰勬湡琛屼负涓庡疄闄呰涓?- 鎴浘鎴栨棩蹇楋紙濡傞€傜敤锛?- 鐜淇℃伅锛堟搷浣滅郴缁熴€佺増鏈瓑锛?
+### 寤鸿鏂板姛鑳?
+鎴戜滑娆㈣繋鏂板姛鑳藉缓璁紒璇凤細
+1. 鎼滅储鐜版湁 Issues锛岀‘璁ゅ缓璁皻鏈瓨鍦?2. 璇︾粏鎻忚堪鍔熻兘闇€姹?3. 瑙ｉ噴涓轰粈涔堟鍔熻兘瀵归」鐩湁浠峰€?4. 鎻愪緵鍙兘鐨勫疄鐜版柟妗?
+### 鎻愪氦浠ｇ爜
 
-### 报告 Bug
+1. Fork 鏈粨搴?2. 鍒涘缓鐗规€у垎鏀細`git checkout -b feature/AmazingFeature`
+3. 鎻愪氦鏇存敼锛歚git commit -m 'Add some AmazingFeature'`
+4. 鎺ㄩ€佸垎鏀細`git push origin feature/AmazingFeature`
+5. 鎵撳紑 Pull Request
 
-在报告 Bug 之前，请：
-1. 搜索现有 Issues，确认问题尚未报告
-2. 使用最新的稳定版本
-3. 准备复现 Bug 的详细步骤
-
-Bug 报告应包含：
-- 清晰的问题描述
-- 复现步骤（1、2、3...）
-- 预期行为与实际行为
-- 截图或日志（如适用）
-- 环境信息（操作系统、版本等）
-
-### 建议新功能
-
-我们欢迎新功能建议！请：
-1. 搜索现有 Issues，确认建议尚未存在
-2. 详细描述功能需求
-3. 解释为什么此功能对项目有价值
-4. 提供可能的实现方案
-
-### 提交代码
-
-1. Fork 本仓库
-2. 创建特性分支：`git checkout -b feature/AmazingFeature`
-3. 提交更改：`git commit -m 'Add some AmazingFeature'`
-4. 推送分支：`git push origin feature/AmazingFeature`
-5. 打开 Pull Request
-
-## 开发环境设置
-
-### 前置条件
+## 寮€鍙戠幆澧冭缃?
+### 鍓嶇疆鏉′欢
 - Windows 10/11
 - Rust 1.70+
 - Node.js 18+
 - Git
 
-### 设置步骤
+### 璁剧疆姝ラ
 
 ```bash
-# 1. 克隆仓库
-git clone https://github.com/Trae-ai/MachineID-Manage.git
+# 1. 鍏嬮殕浠撳簱
+git clone https://github.com/luxiaosen8/MachineID-Manage.git
 cd MachineID-Manage
 
-# 2. 安装依赖
+# 2. 瀹夎渚濊禆
 npm install
 
-# 3. 安装 Rust 依赖
+# 3. 瀹夎 Rust 渚濊禆
 cargo fetch
 
-# 4. 启动开发服务器
+# 4. 鍚姩寮€鍙戞湇鍔″櫒
 cargo tauri dev
 ```
 
-### 代码结构
+### 浠ｇ爜缁撴瀯
 
 ```
 MachineID-Manage/
-├── src-tauri/           # Tauri 后端 (Rust)
-│   ├── src/            # 源代码
-│   │   ├── main.rs     # Tauri 命令入口
-│   │   └── machine_id.rs # 机器码读写逻辑
-│   ├── Cargo.toml      # 依赖配置
-│   └── tauri.conf.json # Tauri 配置
-├── src/                # 前端源码
-│   ├── index.html      # 主页面
-│   ├── script.js       # 前端交互逻辑
-│   └── style.css       # 样式文件
-├── tests/              # 测试文件
-├── AGENTS.md          # 项目规范
-├── CONTRIBUTING.md    # 本贡献指南
-└── README.md          # 项目说明
+鈹溾攢鈹€ src-tauri/           # Tauri 鍚庣 (Rust)
+鈹?  鈹溾攢鈹€ src/            # 婧愪唬鐮?鈹?  鈹?  鈹溾攢鈹€ main.rs     # Tauri 鍛戒护鍏ュ彛
+鈹?  鈹?  鈹斺攢鈹€ machine_id.rs # 鏈哄櫒鐮佽鍐欓€昏緫
+鈹?  鈹溾攢鈹€ Cargo.toml      # 渚濊禆閰嶇疆
+鈹?  鈹斺攢鈹€ tauri.conf.json # Tauri 閰嶇疆
+鈹溾攢鈹€ src/                # 鍓嶇婧愮爜
+鈹?  鈹溾攢鈹€ index.html      # 涓婚〉闈?鈹?  鈹溾攢鈹€ script.js       # 鍓嶇浜や簰閫昏緫
+鈹?  鈹斺攢鈹€ style.css       # 鏍峰紡鏂囦欢
+鈹溾攢鈹€ tests/              # 娴嬭瘯鏂囦欢
+鈹溾攢鈹€ AGENTS.md          # 椤圭洰瑙勮寖
+鈹溾攢鈹€ CONTRIBUTING.md    # 鏈础鐚寚鍗?鈹斺攢鈹€ README.md          # 椤圭洰璇存槑
 ```
 
-### 运行测试
+### 杩愯娴嬭瘯
 
 ```bash
-# 运行 Rust 测试
+# 杩愯 Rust 娴嬭瘯
 cargo test
 
-# 运行前端测试（如有）
+# 杩愯鍓嶇娴嬭瘯锛堝鏈夛級
 npm test
 ```
 
-## 提交规范
+## 鎻愪氦瑙勮寖
 
-我们遵循[约定式提交](https://www.conventionalcommits.org/)规范：
-
+鎴戜滑閬靛惊[绾﹀畾寮忔彁浜(https://www.conventionalcommits.org/)瑙勮寖锛?
 ```
-<类型>[可选范围]: <描述>
+<绫诲瀷>[鍙€夎寖鍥碷: <鎻忚堪>
 
-[可选正文]
+[鍙€夋鏂嘳
 
-[可选脚注]
+[鍙€夎剼娉╙
 ```
 
-### 类型说明
+### 绫诲瀷璇存槑
 
-| 类型 | 说明 |
+| 绫诲瀷 | 璇存槑 |
 |-----|------|
-| `feat` | 新功能 |
-| `fix` | Bug 修复 |
-| `docs` | 文档变更 |
-| `style` | 代码格式（不影响功能） |
-| `refactor` | 代码重构 |
-| `perf` | 性能优化 |
-| `test` | 测试相关 |
-| `chore` | 构建过程或辅助工具变更 |
+| `feat` | 鏂板姛鑳?|
+| `fix` | Bug 淇 |
+| `docs` | 鏂囨。鍙樻洿 |
+| `style` | 浠ｇ爜鏍煎紡锛堜笉褰卞搷鍔熻兘锛?|
+| `refactor` | 浠ｇ爜閲嶆瀯 |
+| `perf` | 鎬ц兘浼樺寲 |
+| `test` | 娴嬭瘯鐩稿叧 |
+| `chore` | 鏋勫缓杩囩▼鎴栬緟鍔╁伐鍏峰彉鏇?|
 
-### 示例
+### 绀轰緥
 
 ```
-feat(machine-id): 添加随机生成机器码功能
-
-- 实现随机 GUID 生成算法
-- 添加格式验证
-- 包含单元测试
+feat(machine-id): 娣诲姞闅忔満鐢熸垚鏈哄櫒鐮佸姛鑳?
+- 瀹炵幇闅忔満 GUID 鐢熸垚绠楁硶
+- 娣诲姞鏍煎紡楠岃瘉
+- 鍖呭惈鍗曞厓娴嬭瘯
 
 Closes #123
 ```
 
-## 代码审查流程
+## 浠ｇ爜瀹℃煡娴佺▼
 
-### Pull Request 要求
+### Pull Request 瑕佹眰
 
-1. **代码质量**
-   - 通过所有测试
-   - 通过 Clippy 检查
-   - 代码格式正确
+1. **浠ｇ爜璐ㄩ噺**
+   - 閫氳繃鎵€鏈夋祴璇?   - 閫氳繃 Clippy 妫€鏌?   - 浠ｇ爜鏍煎紡姝ｇ‘
 
-2. **文档要求**
-   - 更新相关文档
-   - 添加必要的注释
-   - 更新 CHANGELOG（如需要）
+2. **鏂囨。瑕佹眰**
+   - 鏇存柊鐩稿叧鏂囨。
+   - 娣诲姞蹇呰鐨勬敞閲?   - 鏇存柊 CHANGELOG锛堝闇€瑕侊級
 
-3. **提交信息**
-   - 使用清晰的提交信息
-   - 遵循提交规范
-   - 包含关联的 Issue 编号
+3. **鎻愪氦淇℃伅**
+   - 浣跨敤娓呮櫚鐨勬彁浜や俊鎭?   - 閬靛惊鎻愪氦瑙勮寖
+   - 鍖呭惈鍏宠仈鐨?Issue 缂栧彿
 
-### 审查标准
+### 瀹℃煡鏍囧噯
 
-- 功能正确性
-- 代码可读性
-- 性能影响
-- 安全性
-- 向后兼容性
-- 测试覆盖
+- 鍔熻兘姝ｇ‘鎬?- 浠ｇ爜鍙鎬?- 鎬ц兘褰卞搷
+- 瀹夊叏鎬?- 鍚戝悗鍏煎鎬?- 娴嬭瘯瑕嗙洊
 
-## 社区资源
+## 绀惧尯璧勬簮
 
-### 交流渠道
-- GitHub Issues：用于报告问题和提出建议
-- GitHub Discussions：用于一般讨论
-
-### 有用的链接
-- [项目 Wiki](https://github.com/Trae-ai/MachineID-Manage/wiki)
-- [API 文档](https://docs.rs/machineid-manage)
-- [Tauri 文档](https://tauri.app/)
+### 浜ゆ祦娓犻亾
+- GitHub Issues锛氱敤浜庢姤鍛婇棶棰樺拰鎻愬嚭寤鸿
+- GitHub Discussions锛氱敤浜庝竴鑸璁?
+### 鏈夌敤鐨勯摼鎺?- [椤圭洰 Wiki](https://github.com/luxiaosen8/MachineID-Manage/wiki)
+- [API 鏂囨。](https://docs.rs/machineid-manage)
+- [Tauri 鏂囨。](https://tauri.app/)
 
 ---
 
-## 贡献者
-
-感谢所有为 MachineID-Manage 做出贡献的人！
-
-<a href="https://github.com/Trae-ai/MachineID-Manage/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Trae-ai/MachineID-Manage" />
+## 璐＄尞鑰?
+鎰熻阿鎵€鏈変负 MachineID-Manage 鍋氬嚭璐＄尞鐨勪汉锛?
+<a href="https://github.com/luxiaosen8/MachineID-Manage/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=luxiaosen8/MachineID-Manage" />
 </a>
 
 ---
 
-## 许可协议
+## 璁稿彲鍗忚
 
-通过向 MachineID-Manage 项目贡献代码，您同意您的贡献将按照 [MIT 许可证](LICENSE) 的条款进行许可。
+閫氳繃鍚?MachineID-Manage 椤圭洰璐＄尞浠ｇ爜锛屾偍鍚屾剰鎮ㄧ殑璐＄尞灏嗘寜鐓?[MIT 璁稿彲璇乚(LICENSE) 鐨勬潯娆捐繘琛岃鍙€?
+---
+
+**鎰熻阿鎮ㄧ殑璐＄尞锛?*
 
 ---
 
-**感谢您的贡献！**
-
----
-
-**最后更新**：2025年1月27日
+**鏈€鍚庢洿鏂?*锛?025骞?鏈?7鏃?

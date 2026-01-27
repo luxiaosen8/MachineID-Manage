@@ -1,4 +1,4 @@
-# MIT License
+﻿# MIT License
 
 Copyright (c) 2025 MachineID-Manage Contributors
 
@@ -60,7 +60,7 @@ MachineID-Manage is inspired by the need for simple machine identifier managemen
 
 For questions regarding this license, please contact:
 
-- GitHub Issues: https://github.com/Trae-ai/MachineID-Manage/issues
+- GitHub Issues: https://github.com/luxiaosen8/MachineID-Manage/issues
 - Email: [Contact information to be added]
 
 ---
@@ -70,3 +70,4 @@ For questions regarding this license, please contact:
 This file contains the full text of the MIT License as applied to the MachineID-Manage project. A copy of this license should be included with all distributions of this Software.
 
 For the Chinese translation of this license, please see LICENSE.zh-CN.
+
