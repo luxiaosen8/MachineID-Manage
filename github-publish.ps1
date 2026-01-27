@@ -38,7 +38,7 @@ $Headers = @{
 }
 
 $RepoFullName = "${Username}/${RepoName}"
-$ProjectRoot = "c:\Users\78221\Desktop\workspace\trae\MachineID-Manage"
+$ProjectRoot = $PSScriptRoot
 
 Write-Host "[1/5] 检查仓库是否存在..." -ForegroundColor Cyan
 try {

@@ -13,7 +13,8 @@
 ### 2. 运行发布脚本
 
 ```powershell
-cd "c:\Users\78221\Desktop\workspace\trae\MachineID-Manage"
+# 进入项目根目录
+cd "MachineID-Manage"
 
 # 方法 1: 交互式输入（推荐）
 .\github-publish.ps1
