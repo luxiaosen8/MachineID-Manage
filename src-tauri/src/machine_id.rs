@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+#[cfg(windows)]
 use winreg::enums::*;
+#[cfg(windows)]
 use winreg::RegKey;
 
 #[derive(Debug, thiserror::Error)]
@@ -25,6 +27,8 @@ pub enum BackupError {
     InvalidGuidFormat(String),
     #[error("权限不足，需要管理员权限才能修改注册表")]
     InsufficientPermissions,
+    #[error("当前系统不支持该功能（仅支持 Windows）")]
+    UnsupportedPlatform,
 }
 
 impl Serialize for BackupError {
@@ -96,25 +100,21 @@ fn get_backup_file_path() -> PathBuf {
     path
 }
 
+#[cfg(windows)]
 pub fn check_admin_permissions() -> bool {
-    if !cfg!(target_os = "windows") {
-        return false;
-    }
-
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
     let crypt_path = get_registry_path();
-
-    match hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ) {
-        Ok(_) => true,
-        Err(_) => false,
-    }
+    hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
+        .is_ok()
 }
 
-pub fn test_registry_write_access() -> Result<(), BackupError> {
-    if !cfg!(target_os = "windows") {
-        return Err(BackupError::InsufficientPermissions);
-    }
+#[cfg(not(windows))]
+pub fn check_admin_permissions() -> bool {
+    false
+}
 
+#[cfg(windows)]
+pub fn test_registry_write_access() -> Result<(), BackupError> {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
     let crypt_path = get_registry_path();
 
@@ -128,6 +128,11 @@ pub fn test_registry_write_access() -> Result<(), BackupError> {
             }
         }
     }
+}
+
+#[cfg(not(windows))]
+pub fn test_registry_write_access() -> Result<(), BackupError> {
+    Err(BackupError::UnsupportedPlatform)
 }
 
 fn load_backup_store() -> Result<BackupStore, BackupError> {
@@ -226,6 +231,7 @@ pub struct RestoreInfo {
     pub restored_from: MachineIdBackup,
 }
 
+#[cfg(windows)]
 fn set_machine_guid_value(new_guid: &str) -> Result<(), BackupError> {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
     let crypt_path = get_registry_path();
@@ -236,6 +242,11 @@ fn set_machine_guid_value(new_guid: &str) -> Result<(), BackupError> {
         .set_value("MachineGuid", &new_guid)
         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
     Ok(())
+}
+
+#[cfg(not(windows))]
+fn set_machine_guid_value(_new_guid: &str) -> Result<(), BackupError> {
+    Err(BackupError::UnsupportedPlatform)
 }
 
 pub fn restore_backup_by_id(id: &str) -> Result<RestoreInfo, BackupError> {
@@ -265,6 +276,7 @@ pub struct MachineId {
     pub source: String,
 }
 
+#[cfg(windows)]
 pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
     let crypt_path = get_registry_path();
@@ -285,6 +297,11 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     })
 }
 
+#[cfg(not(windows))]
+pub fn read_machine_guid() -> Result<MachineId, BackupError> {
+    Err(BackupError::UnsupportedPlatform)
+}
+
 fn validate_guid_format(guid: &str) -> Result<(), BackupError> {
     let guid_pattern = regex::Regex::new(
         r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
@@ -296,6 +313,7 @@ fn validate_guid_format(guid: &str) -> Result<(), BackupError> {
     Ok(())
 }
 
+#[cfg(windows)]
 pub fn write_machine_guid(
     new_guid: &str,
     description: Option<String>,
@@ -323,6 +341,14 @@ pub fn write_machine_guid(
         pre_backup,
         post_backup,
     })
+}
+
+#[cfg(not(windows))]
+pub fn write_machine_guid(
+    _new_guid: &str,
+    _description: Option<String>,
+) -> Result<WriteResult, BackupError> {
+    Err(BackupError::UnsupportedPlatform)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

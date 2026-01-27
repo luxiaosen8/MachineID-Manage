@@ -12,13 +12,15 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-winreg = "0.50"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 regex = "1.10"
 rand = "0.8"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.50"
 
 [dev-dependencies]
 tempfile = "3"

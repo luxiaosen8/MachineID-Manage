@@ -59,10 +59,22 @@ jobs:
           $portableDir = Join-Path $env:GITHUB_WORKSPACE "portable"
           if (Test-Path $portableDir) { Remove-Item -Recurse -Force $portableDir }
           New-Item -ItemType Directory -Path $portableDir | Out-Null
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "src-tauri\\target\\release\\machineid-manage.exe") $portableDir
+          $candidates = @(
+            (Join-Path $env:GITHUB_WORKSPACE "target\\release\\machineid-manage.exe"),
+            (Join-Path $env:GITHUB_WORKSPACE "src-tauri\\target\\release\\machineid-manage.exe")
+          )
+          $exePath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $exePath) {
+            Write-Error ("未找到可执行文件，已尝试路径: " + ($candidates -join ", "))
+          }
+          Copy-Item $exePath $portableDir
           $resourcesDir = Join-Path $env:GITHUB_WORKSPACE "src-tauri\\target\\release\\resources"
           if (Test-Path $resourcesDir) {
             Copy-Item $resourcesDir (Join-Path $portableDir "resources") -Recurse
+          }
+          $resourcesDir2 = Join-Path $env:GITHUB_WORKSPACE "target\\release\\resources"
+          if (Test-Path $resourcesDir2) {
+            Copy-Item $resourcesDir2 (Join-Path $portableDir "resources") -Recurse -Force
           }
           Compress-Archive -Path (Join-Path $portableDir "*") -DestinationPath (Join-Path $env:GITHUB_WORKSPACE "MachineID-Manage_Portable_Windows.zip") -Force
 
@@ -71,7 +83,9 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: |
+            target/release/bundle/
             src-tauri/target/release/bundle/
+            target/release/machineid-manage.exe
             src-tauri/target/release/machineid-manage.exe
             MachineID-Manage_Portable_Windows.zip
           if-no-files-found: error
