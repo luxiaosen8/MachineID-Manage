@@ -83,9 +83,56 @@ MachineID-Manage/
 
 ## 开源协议
 
-本项目采用 MIT 许可证。详见 [LICENSE](LICENSE)
+本项目采用 **MIT 许可证** 开源。
+
+### 许可证文件
+
+| 文件 | 语言 | 说明 |
+|-----|------|------|
+| [LICENSE](LICENSE) | English | 英文版 MIT 许可证 |
+| [LICENSE.zh-CN](LICENSE.zh-CN) | 中文 | 中文版 MIT 许可证 |
+| [DISCLAIMER.md](DISCLAIMER.md) | 中文 | 免责声明 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 中文 | 贡献指南 |
+
+### 权利与义务
+
+**您可以：**
+- ✅ 免费使用本软件
+- ✅ 修改源代码
+- ✅ 分发本软件
+- ✅ 商业使用
+- ✅ 私有使用
+
+**您需要：**
+- 📋 保留版权声明
+- 📋 包含许可证副本
+
+**您不得：**
+- ❌ 删除或修改版权声明
+- ❌ 将本软件用于非法用途
+
+### 第三方组件
+
+本软件使用的第三方组件及其许可证信息：
+
+| 组件 | 用途 | 许可证 |
+|-----|------|-------|
+| [Tauri 2](https://tauri.app/) | 桌面应用框架 | MIT 或 Apache 2.0 |
+| [Rust](https://www.rust-lang.org/) | 编程语言 | MIT 或 Apache 2.0 |
+| [winreg](https://github.com/DoumanAsh/winreg-rs) | Windows 注册表操作 | MIT |
+
+详情请查看 [Cargo.toml](src-tauri/Cargo.toml)。
+
+## 版权声明
+
+```
+Copyright (c) 2025 MachineID-Manage Contributors
+
+本项目采用 MIT 许可证开源，详见 LICENSE 文件。
+```
 
 ## 联系方式
 
-- GitHub: [https://github.com/yourusername/MachineID-Manage](https://github.com/yourusername/MachineID-Manage)
-- Issues: [https://github.com/yourusername/MachineID-Manage/issues](https://github.com/yourusername/MachineID-Manage/issues)
+- GitHub: [https://github.com/Trae-ai/MachineID-Manage](https://github.com/Trae-ai/MachineID-Manage)
+- Issues: [https://github.com/Trae-ai/MachineID-Manage/issues](https://github.com/Trae-ai/MachineID-Manage/issues)
+- 贡献指南: [CONTRIBUTING.md](CONTRIBUTING.md)
