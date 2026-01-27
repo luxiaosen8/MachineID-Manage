@@ -8,6 +8,7 @@ on:
     paths:
       - 'src-tauri/**'
       - 'src/**'
+      - 'src/i18n/**'
       - 'Cargo.toml'
 
 env:
@@ -56,13 +57,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          cd src-tauri
+          npm install
 
       - name: Build with Tauri (Windows)
         id: build-windows
-        run: |
-          cd src-tauri
-          cargo tauri build --bundles msi,zip
+        run: cargo tauri build --bundles msi,zip
 
       - name: Rename Windows artifacts
         run: |
@@ -97,13 +98,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          cd src-tauri
+          npm install
 
       - name: Build with Tauri (macOS)
         id: build-macos
-        run: |
-          cd src-tauri
-          cargo tauri build --bundles dmg,app,zip
+        run: cargo tauri build --bundles dmg,app,zip
 
       - name: Rename macOS artifacts
         run: |
@@ -138,7 +139,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          cd src-tauri
+          npm install
 
       - name: Install system dependencies
         run: |
@@ -147,9 +150,7 @@ jobs:
 
       - name: Build with Tauri (Ubuntu)
         id: build-ubuntu
-        run: |
-          cd src-tauri
-          cargo tauri build --bundles deb,appimage,zip
+        run: cargo tauri build --bundles deb,appimage,zip
 
       - name: Rename Ubuntu artifacts
         run: |
