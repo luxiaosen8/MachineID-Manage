@@ -1,53 +1,46 @@
 {
   "backups": [
     {
-      "id": "backup_1769468903474",
-      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
+      "id": "backup_1769473811385",
+      "guid": "d7050db3-0b90-599a-1549-0242546ed5f2",
       "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769468903,
-      "description": "备份2"
+      "timestamp": 1769473811,
+      "description": "恢复前自动备份: 从备份 backup_1769473790343 恢复到 E5D97AE3-D1F6-45E5-8986-63FEB69D7B83"
     },
     {
-      "id": "backup_1769468903470",
-      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
+      "id": "backup_1769473790347",
+      "guid": "d7050db3-0b90-599a-1549-0242546ed5f2",
       "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769468903,
-      "description": "备份1"
+      "timestamp": 1769473790,
+      "description": "替换后自动备份: d7050db3-0b90-599a-1549-0242546ed5f2"
     },
     {
-      "id": "backup_1769468903390",
+      "id": "backup_1769473790343",
       "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
       "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769468903,
-      "description": "测试备份"
+      "timestamp": 1769473790,
+      "description": "随机生成 2026/1/27 08:29:48"
     },
     {
-      "id": "backup_1769463376570",
+      "id": "backup_1769473758533",
       "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
       "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769463376,
-      "description": "备份2"
+      "timestamp": 1769473758,
+      "description": "随机生成 2026/1/27 08:29:17"
     },
     {
-      "id": "backup_1769463305814",
+      "id": "backup_1769473739094",
       "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
       "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769463305,
-      "description": "备份2"
+      "timestamp": 1769473739,
+      "description": "随机生成 2026/1/27 08:28:56"
     },
     {
-      "id": "backup_1769463305808",
+      "id": "backup_1769473726937",
       "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
       "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769463305,
-      "description": "备份2"
-    },
-    {
-      "id": "backup_1769463305807",
-      "guid": "E5D97AE3-D1F6-45E5-8986-63FEB69D7B83",
-      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
-      "timestamp": 1769463305,
-      "description": "测试备份"
+      "timestamp": 1769473726,
+      "description": "备份 2026/1/27 08:28:46"
     }
   ]
 }

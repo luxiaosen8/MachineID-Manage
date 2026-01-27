@@ -4,8 +4,9 @@ use crate::machine_id::clear_all_backups as machine_id_clear_all_backups;
 use crate::machine_id::get_backup_count as machine_id_get_backup_count;
 use crate::machine_id::list_backups as machine_id_list_backups;
 use crate::machine_id::{
-    backup_current_machine_guid, delete_backup, generate_random_machine_guid, read_machine_guid,
-    restore_backup_by_id, write_machine_guid, MachineIdBackup, RestoreInfo,
+    backup_current_machine_guid, check_admin_permissions, delete_backup,
+    generate_random_machine_guid, read_machine_guid, restore_backup_by_id, test_registry_write_access,
+    write_machine_guid, MachineIdBackup, RestoreInfo,
 };
 
 mod machine_id;
@@ -248,6 +249,39 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! This is MachineID-Manage.", name)
 }
 
+#[derive(serde::Serialize)]
+struct PermissionCheckResponse {
+    success: bool,
+    has_permission: bool,
+    error: Option<String>,
+}
+
+#[tauri::command]
+fn check_permission_command() -> Result<PermissionCheckResponse, String> {
+    let has_permission = check_admin_permissions();
+    Ok(PermissionCheckResponse {
+        success: true,
+        has_permission,
+        error: None,
+    })
+}
+
+#[tauri::command]
+fn test_write_access_command() -> Result<PermissionCheckResponse, String> {
+    match test_registry_write_access() {
+        Ok(_) => Ok(PermissionCheckResponse {
+            success: true,
+            has_permission: true,
+            error: None,
+        }),
+        Err(e) => Ok(PermissionCheckResponse {
+            success: false,
+            has_permission: false,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -260,7 +294,9 @@ fn main() {
             get_backup_count,
             write_machine_guid_command,
             generate_random_guid_command,
-            restore_backup_by_id_command
+            restore_backup_by_id_command,
+            check_permission_command,
+            test_write_access_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

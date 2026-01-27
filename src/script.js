@@ -7,9 +7,10 @@ let backupsData = [];
 
 window.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM 已加载，等待 Tauri 绑定...');
-    
+
     if (window.__TAURI__) {
         console.log('Tauri 已就绪');
+        await checkAndDisplayPermissionStatus();
         await readMachineId();
         await loadBackups();
     } else {
@@ -22,9 +23,81 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
         loadBackupsMock();
     }
-    
+
     initializeEventListeners();
 });
+
+async function checkAndDisplayPermissionStatus() {
+    const statusElement = document.getElementById('operation-status');
+    if (!statusElement) return;
+
+    try {
+        if (window.__TAURI__) {
+            const { invoke } = window.__TAURI__.core;
+            const result = await invoke('check_permission_command');
+
+            if (result.success && result.has_permission) {
+                statusElement.innerHTML = `<span style="color: #3fb950;">🛡️ 管理员权限已就绪</span>`;
+            } else {
+                statusElement.innerHTML = `<span style="color: #f85149;">⚠️ 权限不足，需要管理员权限</span>`;
+            }
+        }
+    } catch (error) {
+        console.error('权限检测失败:', error);
+    }
+}
+
+async function checkPermissionBeforeWrite() {
+    if (!window.__TAURI__) {
+        return { hasPermission: true, needRestart: false };
+    }
+
+    try {
+        const { invoke } = window.__TAURI__.core;
+        const result = await invoke('test_write_access_command');
+
+        if (result.success && result.has_permission) {
+            return { hasPermission: true, needRestart: false };
+        }
+
+        const confirmed = confirm(
+            '权限不足！\n\n' +
+            '此操作需要管理员权限才能修改注册表。\n\n' +
+            '是否立即以管理员身份重启程序？'
+        );
+
+        if (confirmed) {
+            requestAdminRestart();
+            return { hasPermission: false, needRestart: true };
+        }
+
+        return { hasPermission: false, needRestart: false };
+    } catch (error) {
+        console.error('权限检测失败:', error);
+        return { hasPermission: false, needRestart: false };
+    }
+}
+
+async function requestAdminRestart() {
+    if (!window.__TAURI__) {
+        alert('请右键点击程序，选择"以管理员身份运行"');
+        return;
+    }
+
+    try {
+        const { Command } = await import('@tauri-apps/plugin/shell');
+        const { app } = await import('@tauri-apps/api/core');
+
+        const appPath = await app.path.executablePath();
+        const command = Command.sidecar('shell', ['runas', appPath]);
+
+        await command.spawn();
+        app.exit(0);
+    } catch (error) {
+        console.error('请求管理员重启失败:', error);
+        alert('请求管理员重启失败，请手动右键程序选择"以管理员身份运行"');
+    }
+}
 
 function initializeEventListeners() {
     document.getElementById('read-btn')?.addEventListener('click', async () => {
@@ -153,28 +226,36 @@ async function confirmCustomReplace() {
     const descriptionInput = document.getElementById('custom-description-input');
     const confirmBtn = document.getElementById('confirm-replace-btn');
     const statusElement = document.getElementById('operation-status');
-    
+
     const newGuid = input.value.trim();
     const description = descriptionInput.value.trim() || `自定义替换 ${new Date().toLocaleString()}`;
-    
+
     if (!validateGuidFormat(newGuid)) {
         statusElement.innerHTML = '<span style="color: #f85149;">❌ 无效的 GUID 格式</span>';
         return;
     }
-    
+
     if (!confirm(`确定要将 MachineGuid 替换为:\n${newGuid}\n\n此操作将自动备份当前机器码！`)) {
         return;
     }
-    
+
+    const permCheck = await checkPermissionBeforeWrite();
+    if (!permCheck.hasPermission) {
+        if (!permCheck.needRestart) {
+            statusElement.innerHTML = '<span style="color: #f85149;">❌ 权限不足，操作已取消</span>';
+        }
+        return;
+    }
+
     confirmBtn.disabled = true;
     confirmBtn.textContent = '替换中...';
     statusElement.textContent = '正在备份并替换...';
     statusElement.style.color = '#58a6ff';
-    
+
     try {
         if (window.__TAURI__) {
             const { invoke } = window.__TAURI__.core;
-            const result = await invoke('write_machine_guid_command', { 
+            const result = await invoke('write_machine_guid_command', {
                 newGuid: newGuid,
                 description: description
             });
@@ -192,12 +273,12 @@ async function confirmCustomReplace() {
                 message: `成功将 MachineGuid 替换为: ${newGuid}`,
                 error: null
             };
-            
+
             document.getElementById('machine-guid').textContent = newGuid;
             backupsData.unshift(mockResult.backup);
             displayReplaceResult(mockResult);
         }
-        
+
         closeCustomReplaceModal();
         await loadBackups();
         await readMachineId();
@@ -267,28 +348,36 @@ async function confirmRandomGenerate() {
     const descriptionInput = document.getElementById('random-description-input');
     const confirmBtn = document.getElementById('confirm-random-btn');
     const statusElement = document.getElementById('operation-status');
-    
+
     const newGuid = displayElement.textContent.trim();
     const description = descriptionInput.value.trim() || `随机生成 ${new Date().toLocaleString()}`;
-    
+
     if (!validateGuidFormat(newGuid)) {
         statusElement.innerHTML = '<span style="color: #f85149;">❌ 无效的 GUID 格式</span>';
         return;
     }
-    
+
     if (!confirm(`确定要将 MachineGuid 替换为随机生成的:\n${newGuid}\n\n此操作将自动备份当前机器码！`)) {
         return;
     }
-    
+
+    const permCheck = await checkPermissionBeforeWrite();
+    if (!permCheck.hasPermission) {
+        if (!permCheck.needRestart) {
+            statusElement.innerHTML = '<span style="color: #f85149;">❌ 权限不足，操作已取消</span>';
+        }
+        return;
+    }
+
     confirmBtn.disabled = true;
     confirmBtn.textContent = '替换中...';
     statusElement.textContent = '正在备份并替换...';
     statusElement.style.color = '#58a6ff';
-    
+
     try {
         if (window.__TAURI__) {
             const { invoke } = window.__TAURI__.core;
-            const result = await invoke('generate_random_guid_command', { 
+            const result = await invoke('generate_random_guid_command', {
                 description: description
             });
             displayRandomGenerateResult(result);
@@ -425,13 +514,19 @@ async function backupMachineGuid() {
 
 function displayBackupResult(result) {
     const statusElement = document.getElementById('operation-status');
-    
+
     if (result.success) {
         statusElement.innerHTML = `<span style="color: #3fb950;">✅ 备份成功! ID: ${result.backup.id}</span>`;
         console.log('✅ 备份成功:', result.backup);
     } else {
-        statusElement.innerHTML = `<span style="color: #f85149;">❌ 备份失败: ${result.error}</span>`;
-        console.error('❌ 备份失败:', result.error);
+        const errorMsg = result.error || '未知错误';
+        if (errorMsg.includes('已存在备份') || errorMsg.includes('DuplicateBackup')) {
+            statusElement.innerHTML = `<span style="color: #f9c440;">⏭️ ${errorMsg}</span>`;
+            console.log('⏭️ 跳过重复备份:', errorMsg);
+        } else {
+            statusElement.innerHTML = `<span style="color: #f85149;">❌ 备份失败: ${errorMsg}</span>`;
+            console.error('❌ 备份失败:', errorMsg);
+        }
     }
 }
 
@@ -583,6 +678,14 @@ async function restoreBackup(id, guid) {
     const statusElement = document.getElementById('operation-status');
 
     if (!confirm(`确定要恢复该备份机器码到系统吗？\n\n备份ID: ${id}\n机器码: ${guid}\n\n将先自动备份当前机器码，再执行恢复。`)) {
+        return;
+    }
+
+    const permCheck = await checkPermissionBeforeWrite();
+    if (!permCheck.hasPermission) {
+        if (!permCheck.needRestart) {
+            statusElement.innerHTML = '<span style="color: #f85149;">❌ 权限不足，操作已取消</span>';
+        }
         return;
     }
 
