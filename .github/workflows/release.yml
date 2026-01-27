@@ -62,10 +62,7 @@ jobs:
         id: build-windows
         run: |
           cd src-tauri
-          cargo tauri build --bundles msi,zip,updater
-        env:
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          cargo tauri build --bundles msi,zip
 
       - name: Rename Windows artifacts
         run: |
@@ -106,10 +103,7 @@ jobs:
         id: build-macos
         run: |
           cd src-tauri
-          cargo tauri build --bundles dmg,app,zip,updater
-        env:
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          cargo tauri build --bundles dmg,app,zip
 
       - name: Rename macOS artifacts
         run: |
@@ -155,10 +149,7 @@ jobs:
         id: build-ubuntu
         run: |
           cd src-tauri
-          cargo tauri build --bundles deb,appimage,zip,updater
-        env:
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          cargo tauri build --bundles deb,appimage,zip
 
       - name: Rename Ubuntu artifacts
         run: |
@@ -198,46 +189,46 @@ jobs:
           body: |
             # MachineID-Manage v${{ github.event.release.tag_name }}
 
-            ## 关于 / About
-            MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码管理工具。
+            ## About / 关于
             MachineID-Manage is a Windows MachineGuid management tool built with Rust + Tauri 2.
+            MachineID-Manage 是一款基于 Rust + Tauri 2 开发的 Windows 机器码管理工具。
 
-            ## 功能特性 / Features
-            - 📖 读取机器码 / Read MachineGuid
-            - 💾 备份管理 / Backup management
-            - 🔄 恢复备份 / Restore backup
-            - 🎲 随机生成 / Random generation
-            - 🔧 自定义替换 / Custom replacement
-            - 📋 一键复制 / One-click copy
+            ## Features / 功能特性
+            - 📖 Read MachineGuid / 读取机器码
+            - 💾 Backup Management / 备份管理
+            - 🔄 Restore Backup / 恢复备份
+            - 🎲 Random Generation / 随机生成
+            - 🔧 Custom Replace / 自定义替换
+            - 📋 Copy Function / 复制功能
 
-            ## 下载说明 / Download Instructions
+            ## Downloads / 下载说明
 
             ### Windows
-            - `MachineID-Manage-windows-setup.msi` - 安装版 (推荐)
-            - `MachineID-Manage-windows-portable.zip` - 免安装版
+            - MachineID-Manage-windows-setup.msi (Installer)
+            - MachineID-Manage-windows-portable.zip (Portable)
 
             ### macOS
-            - `MachineID-Manage-macos-setup.dmg` - 安装版 (推荐)
-            - `MachineID-Manage-macos-portable.zip` - 免安装版
+            - MachineID-Manage-macos-setup.dmg (Installer)
+            - MachineID-Manage-macos-portable.zip (Portable)
 
             ### Ubuntu/Linux
-            - `MachineID-Manage-ubuntu-setup.deb` - 安装版 (推荐)
-            - `MachineID-Manage-ubuntu-portable.AppImage` - 免安装版
+            - MachineID-Manage-ubuntu-setup.deb (Installer)
+            - MachineID-Manage-ubuntu-portable.AppImage (Portable)
 
-            ## 使用方法 / Usage
-            1. 下载对应平台的安装包
-            2. 安装并运行程序
-            3. 使用管理员权限执行机器码操作
+            ## Usage / 使用方法
+            1. Download the installer for your platform
+            2. Install and run the application
+            3. Use administrator privileges for modifications
 
-            ## 注意事项 / Notes
-            ⚠️ 修改注册表存在风险，请务必先备份！
+            ## Precautions / 注意事项
+            ⚠️ WARNING: Modifying Windows Registry carries risks! Please backup first!
 
-            ## 系统要求 / System Requirements
+            ## System Requirements / 系统要求
             - Windows 10/11
-            - 管理员权限（修改时需要）
+            - Administrator privileges required
 
             ---
-            查看完整文档 / View full documentation: https://github.com/luxiaosen8/MachineID-Manage
+            View full documentation: https://github.com/luxiaosen8/MachineID-Manage
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -266,48 +257,46 @@ jobs:
           body: |
             # MachineID-Manage v${{ github.event.release.tag_name }}
 
-            ## 📥 下载 / Downloads
-            请下载下方对应您系统的安装包。
+            ## Downloads / 下载
             Please download the installer for your system below.
 
             ### Windows
-            - ⬇️ `MachineID-Manage-windows-setup.msi` - 安装版 Installer
-            - 📦 `MachineID-Manage-windows-portable.zip` - 免安装 Portable
+            - MachineID-Manage-windows-setup.msi (Installer)
+            - MachineID-Manage-windows-portable.zip (Portable)
 
             ### macOS
-            - ⬇️ `MachineID-Manage-macos-setup.dmg` - 安装版 Installer
-            - 📦 `MachineID-Manage-macos-portable.zip` - 免安装 Portable
+            - MachineID-Manage-macos-setup.dmg (Installer)
+            - MachineID-Manage-macos-portable.zip (Portable)
 
             ### Ubuntu/Linux
-            - ⬇️ `MachineID-Manage-ubuntu-setup.deb` - 安装版 Installer
-            - 📦 `MachineID-Manage-ubuntu-portable.AppImage` - 免安装 Portable
+            - MachineID-Manage-ubuntu-setup.deb (Installer)
+            - MachineID-Manage-ubuntu-portable.AppImage (Portable)
 
-            ## ✨ 功能 / Features
-            - 📖 读取机器码 / Read MachineGuid
-            - 💾 备份管理 / Backup management
-            - 🔄 恢复备份 / Restore backup
-            - 🎲 随机生成 / Random generation
-            - 🔧 自定义替换 / Custom replacement
-            - 📋 一键复制 / One-click copy
+            ## Features / 功能
+            - 📖 Read MachineGuid / 读取机器码
+            - 💾 Backup Management / 备份管理
+            - 🔄 Restore Backup / 恢复备份
+            - 🎲 Random Generation / 随机生成
+            - 🔧 Custom Replace / 自定义替换
+            - 📋 Copy Function / 复制功能
 
-            ## ⚠️ 注意事项 / Precautions
-            - 修改注册表存在风险，请务必先备份！
+            ## Precautions / 注意事项
             - Modifying registry carries risks, please backup first!
-            - 需要管理员权限 / Administrator privileges required
-            - 仅支持 Windows / Windows only
+            - Administrator privileges required
+            - Windows only
 
-            ## 📖 使用方法 / How to Use
-            1. 下载并安装对应版本
-            2. 以管理员身份运行程序
-            3. 执行所需的机器码操作
+            ## Usage / 使用方法
+            1. Download and install the version for your system
+            2. Run as administrator
+            3. Perform machine ID operations
 
-            ## 🛠️ 系统要求 / System Requirements
+            ## System Requirements / 系统要求
             - Windows 10/11
-            - 管理员权限
+            - Administrator privileges
 
             ---
-            🌐 项目主页 / Homepage: https://github.com/luxiaosen8/MachineID-Manage
-            📋 问题反馈 / Issues: https://github.com/luxiaosen8/MachineID-Manage/issues
+            Homepage: https://github.com/luxiaosen8/MachineID-Manage
+            Issues: https://github.com/luxiaosen8/MachineID-Manage/issues
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
