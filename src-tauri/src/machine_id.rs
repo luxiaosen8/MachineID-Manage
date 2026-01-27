@@ -25,8 +25,6 @@ pub enum BackupError {
     InvalidGuidFormat(String),
     #[error("权限不足，需要管理员权限才能修改注册表")]
     InsufficientPermissions,
-    #[error("机器码 {0} 已存在备份，跳过重复备份")]
-    DuplicateBackup(String),
 }
 
 impl Serialize for BackupError {
@@ -80,16 +78,8 @@ impl BackupStore {
         self.backups.len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.backups.is_empty()
-    }
-
     pub fn has_guid(&self, guid: &str) -> bool {
         self.backups.iter().any(|b| b.guid == guid)
-    }
-
-    pub fn get_latest_backup_by_guid(&self, guid: &str) -> Option<&MachineIdBackup> {
-        self.backups.iter().find(|b| b.guid == guid)
     }
 }
 
@@ -343,12 +333,6 @@ pub struct WriteResult {
     pub post_backup: Option<MachineIdBackup>,
 }
 
-pub fn read_machine_guid_bytes() -> Result<String, BackupError> {
-    let machine_id = read_machine_guid()?;
-    let bytes: String = machine_id.guid.chars().filter(|c| *c != '-').collect();
-    Ok(bytes)
-}
-
 pub fn generate_random_guid() -> String {
     let mut rng = rand::thread_rng();
     let bytes: [u8; 16] = rand::Rng::gen(&mut rng);
@@ -428,7 +412,7 @@ mod tests {
     fn test_backup_store_add_and_remove() {
         with_temp_backup_dir(|_temp_dir| {
             let mut store = BackupStore::new();
-            assert!(store.is_empty());
+            assert!(store.backups.is_empty());
 
             let backup = MachineIdBackup {
                 id: "test_1".to_string(),
@@ -444,7 +428,7 @@ mod tests {
 
             let removed = store.remove_backup("test_1").unwrap();
             assert_eq!(removed.id, "test_1");
-            assert!(store.is_empty());
+            assert!(store.backups.is_empty());
         });
     }
 
@@ -531,9 +515,9 @@ mod tests {
             let test_guid = "550E8400-E29B-41D4-A716-446655440000";
 
             let result1 = backup_current_machine_guid(Some("备份1".to_string()));
-            match result1 {
-                Ok(_) => {}
-                Err(BackupError::DuplicateBackup(_)) => {
+            match &result1 {
+                Ok(Some(_)) => {}
+                Ok(None) => {
                     println!("⚠️ 当前机器码已有备份，跳过创建");
                 }
                 Err(e) => panic!("备份失败: {:?}", e),
@@ -547,9 +531,9 @@ mod tests {
             }
 
             let result2 = backup_current_machine_guid(Some("备份2".to_string()));
-            match result2 {
-                Ok(_) => assert_eq!(get_backup_count().unwrap(), 2),
-                Err(BackupError::DuplicateBackup(_)) => {
+            match &result2 {
+                Ok(Some(_)) => assert_eq!(get_backup_count().unwrap(), 2),
+                Ok(None) => {
                     println!("⚠️ 测试GUID已有备份，使用1个备份");
                     assert_eq!(get_backup_count().unwrap(), 1);
                 }
@@ -577,17 +561,6 @@ mod tests {
             assert_eq!(machine_id.guid.len(), 36);
         } else {
             assert!(result.is_err());
-        }
-    }
-
-    #[test]
-    fn test_read_machine_guid_bytes() {
-        if cfg!(target_os = "windows") {
-            let result = read_machine_guid_bytes();
-            assert!(result.is_ok());
-            let bytes = result.unwrap();
-            assert_eq!(bytes.len(), 32);
-            assert!(bytes.chars().all(|c| c.is_ascii_hexdigit()));
         }
     }
 
@@ -799,11 +772,11 @@ mod tests {
             };
             store.add_backup(backup1.clone());
 
-            let result = store.get_latest_backup_by_guid("550E8400-E29B-41D4-A716-446655440000");
+            let result = store.backups.iter().find(|b| b.guid == "550E8400-E29B-41D4-A716-446655440000");
             assert!(result.is_some());
             assert_eq!(result.unwrap().id, "backup_1");
 
-            let result = store.get_latest_backup_by_guid("nonexistent-guid");
+            let result = store.backups.iter().find(|b| b.guid == "nonexistent-guid");
             assert!(result.is_none());
         });
     }

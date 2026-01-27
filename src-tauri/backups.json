@@ -1,3 +1,18 @@
 {
-  "backups": []
+  "backups": [
+    {
+      "id": "backup_1769522232494",
+      "guid": "daef9051-6ee9-fd25-ffc4-670a7a044a48",
+      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+      "timestamp": 1769522232,
+      "description": "替换后自动备份: daef9051-6ee9-fd25-ffc4-670a7a044a48"
+    },
+    {
+      "id": "backup_1769522227316",
+      "guid": "550E8400-E29B-41D4-A716-446655440000",
+      "source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+      "timestamp": 1769522227,
+      "description": "Backup 2026/1/27 21:57:07"
+    }
+  ]
 }
