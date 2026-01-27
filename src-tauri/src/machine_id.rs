@@ -454,7 +454,7 @@ mod tests {
             let result = backup_current_machine_guid(Some("测试备份".to_string()));
             assert!(result.is_ok(), "备份应该成功: {:?}", result.err());
 
-            let backup = result.unwrap();
+            let backup = result.unwrap().expect("备份不应为空");
             assert!(!backup.id.is_empty());
             assert!(backup.guid.len() == 36);
             assert_eq!(backup.description, Some("测试备份".to_string()));
@@ -500,7 +500,9 @@ mod tests {
         }
 
         with_temp_backup_dir(|_temp_dir| {
-            let backup = backup_current_machine_guid(Some("待删除备份".to_string())).unwrap();
+            let backup = backup_current_machine_guid(Some("待删除备份".to_string()))
+                .unwrap()
+                .expect("备份不应为空");
             assert_eq!(get_backup_count().unwrap(), 1);
 
             let result = delete_backup(&backup.id);
@@ -664,7 +666,9 @@ mod tests {
 
             let original = read_machine_guid().unwrap();
             let target_backup =
-                backup_current_machine_guid(Some("恢复目标备份".to_string())).unwrap();
+                backup_current_machine_guid(Some("恢复目标备份".to_string()))
+                    .unwrap()
+                    .expect("备份不应为空");
 
             let test_guid = "550E8400-E29B-41D4-A716-446655440000";
             let change_result = write_machine_guid(test_guid, Some("准备恢复测试".to_string()));
@@ -811,17 +815,16 @@ mod tests {
 
             let result1 = backup_current_machine_guid(Some("第一次备份".to_string()));
             assert!(result1.is_ok(), "第一次备份应该成功: {:?}", result1.err());
-            let backup1 = result1.unwrap();
+            let backup1 = result1.unwrap().expect("备份不应为空");
             assert_eq!(get_backup_count().unwrap(), 1);
 
             let result2 = backup_current_machine_guid(Some("第二次备份相同GUID".to_string()));
             match result2 {
-                Ok(_) => panic!("重复备份应该失败"),
-                Err(BackupError::DuplicateBackup(guid)) => {
-                    assert_eq!(guid, backup1.guid);
-                    println!("✅ 正确检测到重复备份: {}", guid);
+                Ok(None) => {
+                    println!("✅ 正确跳过重复备份");
                 }
-                Err(e) => panic!("期望 DuplicateBackup 错误，得到: {:?}", e),
+                Ok(Some(_)) => panic!("重复备份应该返回 None"),
+                Err(e) => panic!("重复备份不应该返回错误: {:?}", e),
             }
 
             assert_eq!(get_backup_count().unwrap(), 1, "备份数量应该保持不变");
@@ -841,7 +844,7 @@ mod tests {
 
             let result1 = backup_current_machine_guid(Some("第一次备份".to_string()));
             assert!(result1.is_ok());
-            let _backup1 = result1.unwrap();
+            let _backup1 = result1.unwrap().expect("备份不应为空");
 
             let test_guid = "550E8400-E29B-41D4-A716-446655440000";
             let write_result = write_machine_guid(test_guid, Some("切换到测试GUID".to_string()));
@@ -855,7 +858,7 @@ mod tests {
 
             let result2 = backup_current_machine_guid(Some("备份测试GUID".to_string()));
             assert!(result2.is_ok());
-            let backup2 = result2.unwrap();
+            let backup2 = result2.unwrap().expect("备份不应为空");
             assert_eq!(backup2.guid, test_guid);
 
             assert_eq!(get_backup_count().unwrap(), 2);
