@@ -47,8 +47,23 @@ jobs:
         run: cargo install tauri-cli --locked --version "^2"
 
       - name: Build with Tauri
+        if: matrix.os != 'macos-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: src-tauri
+        run: cargo tauri build --verbose
+
+      - name: Build with Tauri (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_HTTP_PROXY: "socks5://127.0.0.1:7897"
+          CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_1: "http.proxy"
+          GIT_CONFIG_VALUE_1: "socks5://127.0.0.1:7897"
+          GIT_CONFIG_KEY_2: "https.proxy"
+          GIT_CONFIG_VALUE_2: "socks5://127.0.0.1:7897"
         working-directory: src-tauri
         run: cargo tauri build --verbose
 
