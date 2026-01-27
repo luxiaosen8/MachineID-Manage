@@ -52,6 +52,30 @@ This project was entirely developed by **AI** and cannot guarantee complete func
 
 ---
 
+## Platform Compatibility
+
+### Feature Matrix
+
+| Feature | Windows | macOS | Linux | Notes |
+|:-------:|:-------:|:-----:|:-----:|-------|
+| Read Machine ID | ✅ | ✅ | ✅ | Full support on all platforms |
+| Write Machine ID | ✅ | ❌ | ✅ | macOS write not supported (system limitation) |
+| Backup | ✅ | ✅ | ✅ | Full support on all platforms |
+| Restore | ✅ | ❌ | ✅ | macOS restore not supported |
+| Random Generate | ✅ | ❌ | ❌ | Windows only |
+| Permission Check | ✅ | ✅ | ✅ | Full support on all platforms |
+| Admin Restart | ✅ | ✅ | ✅ | Full support on all platforms |
+| UI Rendering | ✅ | ✅ | ✅ | Full support on all platforms |
+| Internationalization | ✅ | ✅ | ✅ | Full support on all platforms |
+
+### Platform Notes
+
+- **Windows**: Full functionality available. Requires administrator privileges for registry modifications.
+- **macOS**: Read and backup operations supported. Write operations are not supported due to macOS system limitations on hardware UUID modification.
+- **Linux**: Read and backup operations supported. Write operations require root privileges.
+
+---
+
 ## Quick Start
 
 ### System Requirements
@@ -75,7 +99,18 @@ This project was entirely developed by **AI** and cannot guarantee complete func
 2. Extract the ZIP file to your desired location
 3. Run `machineid-manage.exe` directly
 
-#### Option 3: Build from Source
+---
+
+## Development
+
+### Prerequisites
+
+- **Rust** 1.70+ ([Install Rust](https://rustup.rs/))
+- **Node.js** 18+ ([Install Node.js](https://nodejs.org/))
+- **Tauri CLI**: `cargo install tauri-cli`
+
+### Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
@@ -84,118 +119,100 @@ cd MachineID-Manage
 # Install dependencies
 npm install
 
-# Start development server
-cargo tauri dev
+# Run in development mode (requires administrator privileges)
+npm run tauri dev
 
-# Build production version
-cargo tauri build
+# Build for production
+npm run tauri build
 ```
-
-### Operations Guide
-
-1. **Read MachineGuid** - Click "Read MachineGuid" to get the current MachineGuid
-2. **Backup** - Click "Backup" to save the current machine ID to local storage
-3. **Random Generate** - Click "Random Generate" to create and replace with a new random GUID
-4. **Custom Replace** - Enter a valid GUID format and confirm replacement
-5. **Restore Backup** - Select a backup from the list and click restore
 
 ---
 
-## Project Structure
+## Technical Architecture
+
+### Tech Stack
+
+- **Backend**: Rust + Tauri 2
+- **Frontend**: HTML5 + CSS3 + JavaScript (Vanilla)
+- **Registry Operations**: winreg (Windows Registry API)
+- **Build Tool**: Tauri CLI
+- **Package Manager**: npm
+
+### Project Structure
 
 ```
 MachineID-Manage/
-├── src-tauri/                # Tauri backend (Rust)
+├── src/                    # Frontend source code
+│   ├── index.html         # Main HTML file
+│   ├── style.css          # Stylesheet
+│   ├── script.js          # JavaScript logic
+│   └── i18n/              # Internationalization
+│       ├── index.js       # i18n core
+│       ├── en.json        # English translations
+│       └── zh-CN.json     # Chinese translations
+├── src-tauri/             # Rust backend
 │   ├── src/
-│   │   ├── main.rs          # Tauri command entry point
-│   │   └── machine_id.rs    # Machine ID read/write operations
-│   ├── Cargo.toml           # Rust dependencies configuration
-│   ├── tauri.conf.json      # Tauri configuration
-│   └── icons/               # Application icons
-├── src/                     # Frontend source code
-│   ├── index.html           # Main page
-│   ├── style.css            # Styles
-│   └── script.js            # Client-side logic
-├── tests/                   # Test files
-├── README.md                # Project documentation (English)
-├── README.zh-CN.md          # 项目说明（中文）
-├── CONTRIBUTING.md          # Contribution guidelines
-├── LICENSE                  # MIT License
-├── .github/
-│   └── workflows/           # GitHub Actions CI/CD
+│   │   ├── main.rs        # Application entry
+│   │   ├── lib.rs         # Library exports
+│   │   ├── machine_id.rs  # Machine ID operations
+│   │   └── commands.rs    # Tauri commands
+│   ├── Cargo.toml         # Rust dependencies
+│   └── tauri.conf.json    # Tauri configuration
+├── docs/                  # Documentation
+└── README.md              # This file
 ```
 
 ---
 
-## Tech Stack
+## Security
 
-- **Rust** - Systems programming language
-- **Tauri 2** - Cross-platform application framework
-- **Windows Registry** - System registry operations (winreg crate)
-- **HTML/CSS/JavaScript** - Frontend interface
+⚠️ **Important Security Notice**
 
----
-
-## Security Notes
-
-> **WARNING**
->
-> Modifying the Windows Registry carries inherent risks. Always create system backups before performing any operations.
-
-### Security Measures
-
-| Icon | Measure | Description |
-|:----:|---------|-------------|
-| 🔒 | Permission Check | Check administrator rights before write operations |
-| 💾 | Auto Backup | Automatic backup before modification |
-| ✅ | User Confirmation | Require user confirmation for dangerous operations |
-| 📝 | Operation Log | Log all registry modifications |
-| 🔍 | Input Validation | Validate GUID format before writing |
-
-### Security Recommendations
-
-1. **Always backup** - Export and save the current MachineGuid before use
-2. **Test first** - Verify operation effects in a test environment
-3. **Minimal permissions** - Only grant administrator rights when necessary
-
----
-
-## Changelog
-
-### v1.4.0 (2026-01-28)
-- Fixed GitHub Actions workflow for Tauri v2
-- Updated version to 1.4.0
-- Improved CI/CD pipeline
-
-### v1.3.7 (Previous)
-- Initial stable release
-- Basic MachineGuid management features
-- Backup and restore functionality
+- This tool modifies Windows Registry settings. Always create backups before making changes.
+- Administrator privileges are required for registry modifications.
+- The application performs validation on all GUID inputs to prevent invalid entries.
+- All backup data is stored locally in JSON format.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+### Development Guidelines
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## Contact
+## Acknowledgments
 
-- **GitHub**: [https://github.com/luxiaosen8/MachineID-Manage](https://github.com/luxiaosen8/MachineID-Manage)
-- **Issues**: [https://github.com/luxiaosen8/MachineID-Manage/issues](https://github.com/luxiaosen8/MachineID-Manage/issues)
-- **Releases**: [https://github.com/luxiaosen8/MachineID-Manage/releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
+- [Tauri](https://tauri.app/) - Build smaller, faster, and more secure desktop applications
+- [Rust](https://www.rust-lang.org/) - A language empowering everyone to build reliable and efficient software
+- [winreg](https://docs.rs/winreg/) - Rust library for accessing the Windows Registry
+
+---
+
+## Support
+
+If you encounter any issues or have questions, please [open an issue](https://github.com/luxiaosen8/MachineID-Manage/issues) on GitHub.
 
 ---
 
 <div align="center">
 
-**Thank you for using MachineID-Manage!**
+**[⬆ Back to Top](#machineid-manage)**
+
+Made with ❤️ by AI
 
 </div>
