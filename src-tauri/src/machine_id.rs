@@ -167,12 +167,12 @@ fn generate_backup_id() -> String {
 
 pub fn backup_current_machine_guid(
     description: Option<String>,
-) -> Result<MachineIdBackup, BackupError> {
+) -> Result<Option<MachineIdBackup>, BackupError> {
     let machine_id = read_machine_guid()?;
 
     let store = load_backup_store()?;
     if store.has_guid(&machine_id.guid) {
-        return Err(BackupError::DuplicateBackup(machine_id.guid.clone()));
+        return Ok(None);
     }
 
     let backup = MachineIdBackup {
@@ -190,7 +190,7 @@ pub fn backup_current_machine_guid(
     store.add_backup(backup.clone());
     save_backup_store(&store)?;
 
-    Ok(backup)
+    Ok(Some(backup))
 }
 
 pub fn list_backups() -> Result<Vec<MachineIdBackup>, BackupError> {
@@ -228,7 +228,7 @@ pub fn get_backup_by_id(id: &str) -> Result<MachineIdBackup, BackupError> {
 pub struct RestoreInfo {
     pub previous_guid: String,
     pub restored_guid: String,
-    pub pre_backup: MachineIdBackup,
+    pub pre_backup: Option<MachineIdBackup>,
     pub restored_from: MachineIdBackup,
 }
 
@@ -305,10 +305,10 @@ fn validate_guid_format(guid: &str) -> Result<(), BackupError> {
 pub fn write_machine_guid(
     new_guid: &str,
     description: Option<String>,
-) -> Result<MachineIdBackup, BackupError> {
+) -> Result<WriteResult, BackupError> {
     validate_guid_format(new_guid)?;
 
-    backup_current_machine_guid(description)?;
+    let pre_backup = backup_current_machine_guid(description)?;
 
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
     let crypt_path = r"SOFTWARE\Microsoft\Cryptography";
@@ -320,19 +320,23 @@ pub fn write_machine_guid(
         .set_value("MachineGuid", &new_guid)
         .map_err(|e| BackupError::RegistryWriteError(e.to_string()))?;
 
-    backup_current_machine_guid(Some(format!("替换后自动备份: {}", new_guid)))?;
+    let post_backup = backup_current_machine_guid(Some(format!("替换后自动备份: {}", new_guid)))?;
 
     let machine_id = read_machine_guid()?;
-    Ok(MachineIdBackup {
-        id: generate_backup_id(),
-        guid: machine_id.guid,
-        source: machine_id.source,
-        timestamp: SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs(),
-        description: Some(format!("自定义替换: {}", new_guid)),
+    Ok(WriteResult {
+        previous_guid: pre_backup.as_ref().map(|b| b.guid.clone()).unwrap_or_else(|| machine_id.guid.clone()),
+        new_guid: machine_id.guid.clone(),
+        pre_backup,
+        post_backup,
     })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WriteResult {
+    pub previous_guid: String,
+    pub new_guid: String,
+    pub pre_backup: Option<MachineIdBackup>,
+    pub post_backup: Option<MachineIdBackup>,
 }
 
 pub fn read_machine_guid_bytes() -> Result<String, BackupError> {
@@ -357,7 +361,7 @@ pub fn generate_random_guid() -> String {
 
 pub fn generate_random_machine_guid(
     description: Option<String>,
-) -> Result<MachineIdBackup, BackupError> {
+) -> Result<WriteResult, BackupError> {
     let new_guid = generate_random_guid();
     write_machine_guid(&new_guid, description)
 }

@@ -6,7 +6,7 @@ use crate::machine_id::list_backups as machine_id_list_backups;
 use crate::machine_id::{
     backup_current_machine_guid, check_admin_permissions, delete_backup,
     generate_random_machine_guid, read_machine_guid, restore_backup_by_id, test_registry_write_access,
-    write_machine_guid, MachineIdBackup, RestoreInfo,
+    write_machine_guid, MachineIdBackup, RestoreInfo, WriteResult,
 };
 
 mod machine_id;
@@ -23,6 +23,7 @@ struct MachineIdResponse {
 struct BackupResponse {
     success: bool,
     backup: Option<MachineIdBackup>,
+    skipped: bool,
     error: Option<String>,
 }
 
@@ -57,12 +58,14 @@ fn backup_machine_guid(description: Option<String>) -> Result<BackupResponse, St
     match backup_current_machine_guid(description) {
         Ok(backup) => Ok(BackupResponse {
             success: true,
-            backup: Some(backup),
+            backup,
+            skipped: false,
             error: None,
         }),
         Err(e) => Ok(BackupResponse {
             success: false,
             backup: None,
+            skipped: false,
             error: Some(e.to_string()),
         }),
     }
@@ -92,11 +95,13 @@ fn delete_backup_by_id(id: String) -> Result<BackupResponse, String> {
         Ok(_) => Ok(BackupResponse {
             success: true,
             backup: None,
+            skipped: false,
             error: None,
         }),
         Err(e) => Ok(BackupResponse {
             success: false,
             backup: None,
+            skipped: false,
             error: Some(e.to_string()),
         }),
     }
@@ -108,11 +113,13 @@ fn clear_all_backups() -> Result<BackupResponse, String> {
         Ok(_) => Ok(BackupResponse {
             success: true,
             backup: None,
+            skipped: false,
             error: None,
         }),
         Err(e) => Ok(BackupResponse {
             success: false,
             backup: None,
+            skipped: false,
             error: Some(e.to_string()),
         }),
     }
@@ -144,7 +151,10 @@ struct BackupCountResponse {
 #[derive(serde::Serialize)]
 struct WriteGuidResponse {
     success: bool,
-    backup: Option<MachineIdBackup>,
+    previous_guid: String,
+    new_guid: String,
+    pre_backup: Option<MachineIdBackup>,
+    post_backup: Option<MachineIdBackup>,
     message: String,
     error: Option<String>,
 }
@@ -155,15 +165,26 @@ fn write_machine_guid_command(
     description: Option<String>,
 ) -> Result<WriteGuidResponse, String> {
     match write_machine_guid(&new_guid, description) {
-        Ok(backup) => Ok(WriteGuidResponse {
+        Ok(WriteResult {
+            previous_guid,
+            new_guid: current_guid,
+            pre_backup,
+            post_backup,
+        }) => Ok(WriteGuidResponse {
             success: true,
-            backup: Some(backup),
-            message: format!("成功将 MachineGuid 替换为: {}", new_guid),
+            previous_guid,
+            new_guid: current_guid.clone(),
+            pre_backup,
+            post_backup,
+            message: format!("成功将 MachineGuid 替换为: {}", current_guid),
             error: None,
         }),
         Err(e) => Ok(WriteGuidResponse {
             success: false,
-            backup: None,
+            previous_guid: String::new(),
+            new_guid: String::new(),
+            pre_backup: None,
+            post_backup: None,
             message: String::new(),
             error: Some(e.to_string()),
         }),
@@ -173,8 +194,10 @@ fn write_machine_guid_command(
 #[derive(serde::Serialize)]
 struct GenerateRandomGuidResponse {
     success: bool,
-    backup: Option<MachineIdBackup>,
+    previous_guid: String,
     new_guid: String,
+    pre_backup: Option<MachineIdBackup>,
+    post_backup: Option<MachineIdBackup>,
     message: String,
     error: Option<String>,
 }
@@ -202,7 +225,7 @@ fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, Str
             success: true,
             previous_guid,
             restored_guid: restored_guid.clone(),
-            pre_backup: Some(pre_backup),
+            pre_backup,
             restored_from: Some(restored_from),
             message: format!("恢复成功: {}", restored_guid),
             error: None,
@@ -224,20 +247,26 @@ fn generate_random_guid_command(
     description: Option<String>,
 ) -> Result<GenerateRandomGuidResponse, String> {
     match generate_random_machine_guid(description) {
-        Ok(backup) => {
-            let new_guid = backup.guid.clone();
-            Ok(GenerateRandomGuidResponse {
-                success: true,
-                backup: Some(backup),
-                new_guid: new_guid.clone(),
-                message: format!("成功生成并替换 MachineGuid: {}", new_guid),
-                error: None,
-            })
-        }
+        Ok(WriteResult {
+            previous_guid,
+            new_guid: current_guid,
+            pre_backup,
+            post_backup,
+        }) => Ok(GenerateRandomGuidResponse {
+            success: true,
+            previous_guid,
+            new_guid: current_guid.clone(),
+            pre_backup,
+            post_backup,
+            message: format!("成功生成并替换 MachineGuid: {}", current_guid),
+            error: None,
+        }),
         Err(e) => Ok(GenerateRandomGuidResponse {
             success: false,
-            backup: None,
+            previous_guid: String::new(),
             new_guid: String::new(),
+            pre_backup: None,
+            post_backup: None,
             message: String::new(),
             error: Some(e.to_string()),
         }),
