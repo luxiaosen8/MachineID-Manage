@@ -6,3 +6,6 @@ target/
 src-tauri/src-tauri/bin
 src-tauri/src-tauri/*.exe
 src-tauri/src-tauri/*.dll
+
+# Privacy sensitive data - Machine ID backups
+backups.json

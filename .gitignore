@@ -34,3 +34,6 @@ yarn-error.log*
 # 临时文件
 *.tmp
 *.temp
+
+# Privacy sensitive data - Machine ID backups
+src-tauri/backups.json
