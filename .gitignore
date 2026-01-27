@@ -37,3 +37,6 @@ yarn-error.log*
 
 # Privacy sensitive data - Machine ID backups
 src-tauri/backups.json
+
+# Project management (Trae beads - task tracking)
+.beads/

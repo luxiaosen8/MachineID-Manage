@@ -1,27 +1,37 @@
 name: Build and Release
 
 on:
-  push:
-    branches: [master]
   release:
     types: [created]
+  push:
+    branches: [master]
+    paths:
+      - 'src-tauri/**'
+      - 'src/**'
+      - 'Cargo.toml'
 
 env:
   RUST_VERSION: stable
-  NODE_VERSION: 20
+  NODE_VERSION: '20'
 
 jobs:
   check:
     name: Pre-build Check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
 
       - name: Check Rust formatting
         run: rustfmt --check src-tauri/src/*.rs 2>/dev/null || true
 
-      - name: Check format
+      - name: Run cargo check
         run: |
           cd src-tauri
           cargo check --message-format=short 2>&1 | head -20 || true
@@ -48,17 +58,27 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build with Tauri
-        id: build
+      - name: Build with Tauri (Windows)
+        id: build-windows
         run: |
           cd src-tauri
-          cargo tauri build --bundles msi,zip
+          cargo tauri build --bundles msi,zip,updater
+        env:
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
-      - name: Upload Artifacts
+      - name: Rename Windows artifacts
+        run: |
+          cd src-tauri/target/release/bundle
+          if (Test-Path "*.msi") { Rename-Item -Path (Get-Item *.msi).Name -NewName "MachineID-Manage-windows-setup.msi" }
+          if (Test-Path "*.zip") { Rename-Item -Path (Get-Item *.zip).Name -NewName "MachineID-Manage-windows-portable.zip" }
+
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
-          path: src-tauri/target/release/bundle/**/*
+          path: src-tauri/target/release/bundle/**
+          retention-days: 5
 
   build-macos:
     name: Build for macOS
@@ -82,16 +102,27 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build with Tauri
+      - name: Build with Tauri (macOS)
+        id: build-macos
         run: |
           cd src-tauri
-          cargo tauri build --bundles dmg,app
+          cargo tauri build --bundles dmg,app,zip,updater
+        env:
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
-      - name: Upload Artifacts
+      - name: Rename macOS artifacts
+        run: |
+          cd src-tauri/target/release/bundle
+          if (Test-Path "*.dmg") { Rename-Item -Path (Get-Item *.dmg).Name -NewName "MachineID-Manage-macos-setup.dmg" }
+          if (Test-Path "*.zip") { Rename-Item -Path (Get-Item *.zip).Name -NewName "MachineID-Manage-macos-portable.zip" }
+
+      - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-artifacts
-          path: src-tauri/target/release/bundle/**/*
+          path: src-tauri/target/release/bundle/**
+          retention-days: 5
 
   build-ubuntu:
     name: Build for Ubuntu
@@ -120,16 +151,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y webkit2gtk4.0 libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
-      - name: Build with Tauri
+      - name: Build with Tauri (Ubuntu)
+        id: build-ubuntu
         run: |
           cd src-tauri
-          cargo tauri build --bundles deb,appimage
+          cargo tauri build --bundles deb,appimage,zip,updater
+        env:
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
-      - name: Upload Artifacts
+      - name: Rename Ubuntu artifacts
+        run: |
+          cd src-tauri/target/release/bundle
+          if (Test-Path "*.deb") { Rename-Item -Path (Get-Item *.deb).Name -NewName "MachineID-Manage-ubuntu-setup.deb" }
+          if (Test-Path "*.appimage") { Rename-Item -Path (Get-Item *.appimage).Name -NewName "MachineID-Manage-ubuntu-portable.AppImage" }
+          if (Test-Path "*.zip") { Rename-Item -Path (Get-Item *.zip).Name -NewName "MachineID-Manage-ubuntu-portable.zip" }
+
+      - name: Upload Ubuntu Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-artifacts
-          path: src-tauri/target/release/bundle/**/*
+          path: src-tauri/target/release/bundle/**
+          retention-days: 5
 
   create-release:
     name: Create GitHub Release
@@ -147,16 +190,60 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Release
+      - name: Create Release with Bilingual Notes
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**
+          body: |
+            # MachineID-Manage v${{ github.event.release.tag_name }}
+
+            ## 关于 / About
+            MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码管理工具。
+            MachineID-Manage is a Windows MachineGuid management tool built with Rust + Tauri 2.
+
+            ## 功能特性 / Features
+            - 📖 读取机器码 / Read MachineGuid
+            - 💾 备份管理 / Backup management
+            - 🔄 恢复备份 / Restore backup
+            - 🎲 随机生成 / Random generation
+            - 🔧 自定义替换 / Custom replacement
+            - 📋 一键复制 / One-click copy
+
+            ## 下载说明 / Download Instructions
+
+            ### Windows
+            - `MachineID-Manage-windows-setup.msi` - 安装版 (推荐)
+            - `MachineID-Manage-windows-portable.zip` - 免安装版
+
+            ### macOS
+            - `MachineID-Manage-macos-setup.dmg` - 安装版 (推荐)
+            - `MachineID-Manage-macos-portable.zip` - 免安装版
+
+            ### Ubuntu/Linux
+            - `MachineID-Manage-ubuntu-setup.deb` - 安装版 (推荐)
+            - `MachineID-Manage-ubuntu-portable.AppImage` - 免安装版
+
+            ## 使用方法 / Usage
+            1. 下载对应平台的安装包
+            2. 安装并运行程序
+            3. 使用管理员权限执行机器码操作
+
+            ## 注意事项 / Notes
+            ⚠️ 修改注册表存在风险，请务必先备份！
+
+            ## 系统要求 / System Requirements
+            - Windows 10/11
+            - 管理员权限（修改时需要）
+
+            ---
+            查看完整文档 / View full documentation: https://github.com/luxiaosen8/MachineID-Manage
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHOB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  create-release-draft:
-    name: Create Draft Release
+  create-draft-release:
+    name: Create Draft Release (for testing)
     runs-on: ubuntu-latest
     needs: [build-windows, build-macos, build-ubuntu]
     if: github.event_name == 'release'
@@ -171,11 +258,56 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Release
+      - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**
           draft: true
+          body: |
+            # MachineID-Manage v${{ github.event.release.tag_name }}
+
+            ## 📥 下载 / Downloads
+            请下载下方对应您系统的安装包。
+            Please download the installer for your system below.
+
+            ### Windows
+            - ⬇️ `MachineID-Manage-windows-setup.msi` - 安装版 Installer
+            - 📦 `MachineID-Manage-windows-portable.zip` - 免安装 Portable
+
+            ### macOS
+            - ⬇️ `MachineID-Manage-macos-setup.dmg` - 安装版 Installer
+            - 📦 `MachineID-Manage-macos-portable.zip` - 免安装 Portable
+
+            ### Ubuntu/Linux
+            - ⬇️ `MachineID-Manage-ubuntu-setup.deb` - 安装版 Installer
+            - 📦 `MachineID-Manage-ubuntu-portable.AppImage` - 免安装 Portable
+
+            ## ✨ 功能 / Features
+            - 📖 读取机器码 / Read MachineGuid
+            - 💾 备份管理 / Backup management
+            - 🔄 恢复备份 / Restore backup
+            - 🎲 随机生成 / Random generation
+            - 🔧 自定义替换 / Custom replacement
+            - 📋 一键复制 / One-click copy
+
+            ## ⚠️ 注意事项 / Precautions
+            - 修改注册表存在风险，请务必先备份！
+            - Modifying registry carries risks, please backup first!
+            - 需要管理员权限 / Administrator privileges required
+            - 仅支持 Windows / Windows only
+
+            ## 📖 使用方法 / How to Use
+            1. 下载并安装对应版本
+            2. 以管理员身份运行程序
+            3. 执行所需的机器码操作
+
+            ## 🛠️ 系统要求 / System Requirements
+            - Windows 10/11
+            - 管理员权限
+
+            ---
+            🌐 项目主页 / Homepage: https://github.com/luxiaosen8/MachineID-Manage
+            📋 问题反馈 / Issues: https://github.com/luxiaosen8/MachineID-Manage/issues
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
