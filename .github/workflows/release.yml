@@ -2,6 +2,8 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - master
     tags:
       - 'v*'
   workflow_dispatch:
@@ -46,42 +48,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "MachineID-Manage ${{ github.ref_name }}"
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v1.2.0-beta-{0}', github.sha) }}
+          releaseName: "MachineID-Manage ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.0-beta' }}"
           releaseBody: |
-            # MachineID-Manage ${{ github.ref_name }}
+            # MachineID-Manage Release
 
             ## About / 关于
             MachineID-Manage is a Windows MachineGuid management tool built with Rust + Tauri 2.
             MachineID-Manage 是一款基于 Rust + Tauri 2 开发的 Windows 机器码管理工具。
 
             ## What's New | 本次更新
-            ### ✨ New Features | 新功能
-            - **Multi-language Support** | **多语言支持**
-              - Added complete i18n system with auto locale detection
-              - 添加完整的 i18n 系统，支持自动检测系统语言
-              - Supports English and Simplified Chinese (zh-CN)
-              - 支持英文和简体中文
-
-            ### 🐛 Bug Fixes | Bug 修复
-            - **GitHub Actions Build Fix**
-              - Fixed npm install directory for Tauri 2
-              - Fixed workflow trigger conditions
-              - 修复 GitHub Actions 构建失败及触发问题
-
-            ## Features | 功能特性
-            - 📖 Read MachineGuid | 读取机器码
-            - 💾 Backup Management | 备份管理
-            - 🔄 Restore Backup | 恢复备份
-            - 🎲 Random Generation | 随机生成
-            - 🔧 Custom Replace | 自定义替换
-            - 📋 Copy Function | 复制功能
-
-            ## Warning | 警告
-            ⚠️ Modifying Windows Registry carries risks! Please backup first!
-            ⚠️ 修改注册表存在风险！请务必先备份！
+            - ✨ Multi-language Support (en/zh-CN) | 多语言支持
+            - 🚀 Improved CI/CD Workflow with Tauri Action | 优化 CI/CD 工作流
+            - 🐛 Fixed npm install and trigger issues | 修复安装及触发问题
 
             ---
             View full documentation: https://github.com/luxiaosen8/MachineID-Manage
           releaseDraft: false
-          prerelease: false
+          prerelease: ${{ github.ref_type != 'tag' }}
