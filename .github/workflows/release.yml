@@ -59,7 +59,7 @@ jobs:
         with:
           tagName: ${{ github.event.inputs.version || github.ref_name }}
           releaseName: 'MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}'
-          releaseBody: |
+          releaseBody: >-
             ## MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
 
             ### 使用方法 / Usage
