@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  # Windows Build
+  # Windows Build Only
   release-windows:
     runs-on: windows-latest
     steps:
@@ -69,113 +69,18 @@ jobs:
             MachineID-Manage_*_windows_portable.zip
           retention-days: 30
 
-  # macOS Build
-  release-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin,aarch64-apple-darwin
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          npm install
-          cargo install tauri-cli --locked
-
-      - name: Build with Tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cargo tauri build --verbose
-
-      - name: Create Portable Version
-        run: |
-          VERSION="${{ github.event.inputs.version || github.ref_name }}"
-          VERSION=${VERSION#v}
-          PORTABLE_DIR="MachineID-Manage_${VERSION}_macos_portable"
-          mkdir -p "$PORTABLE_DIR"
-          cp "src-tauri/target/release/machineid-manage" "$PORTABLE_DIR/"
-          cp -r "src-tauri/icons" "$PORTABLE_DIR/"
-          zip -r "${PORTABLE_DIR}.zip" "$PORTABLE_DIR"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-release
-          path: |
-            src-tauri/target/release/bundle/
-            MachineID-Manage_*_macos_portable.zip
-          retention-days: 30
-
-  # Linux Build
-  release-linux:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          npm install
-          cargo install tauri-cli --locked
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Build with Tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cargo tauri build --verbose
-
-      - name: Create Portable Version
-        run: |
-          VERSION="${{ github.event.inputs.version || github.ref_name }}"
-          VERSION=${VERSION#v}
-          PORTABLE_DIR="MachineID-Manage_${VERSION}_linux_portable"
-          mkdir -p "$PORTABLE_DIR"
-          cp "src-tauri/target/release/machineid-manage" "$PORTABLE_DIR/"
-          cp -r "src-tauri/icons" "$PORTABLE_DIR/"
-          tar -czf "${PORTABLE_DIR}.tar.gz" "$PORTABLE_DIR"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-release
-          path: |
-            src-tauri/target/release/bundle/
-            MachineID-Manage_*_linux_portable.tar.gz
-          retention-days: 30
-
   # Create Release
   create-release:
-    needs: [release-windows, release-macos, release-linux]
+    needs: [release-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+          name: windows-release
           path: artifacts
 
       - name: Create Release
@@ -200,13 +105,7 @@ jobs:
             - 安装版: `.msi` 或 `.exe`
             - 便携版: `MachineID-Manage_*_windows_portable.zip`
 
-            #### macOS
-            - 安装版: `.dmg`
-            - 便携版: `MachineID-Manage_*_macos_portable.zip`
-
-            #### Linux
-            - 安装版: `.AppImage` 或 `.deb`
-            - 便携版: `MachineID-Manage_*_linux_portable.tar.gz`
+            > **注意**: 本工具专为 Windows 系统设计，仅支持 Windows 10/11 平台
 
             ### 🚀 快速开始
 
@@ -278,9 +177,7 @@ jobs:
             ---
             **感谢使用 MachineID-Manage! / Thank you for using MachineID-Manage!**
           files: |
-            artifacts/windows-release/**/**
-            artifacts/macos-release/**/**
-            artifacts/linux-release/**/**
+            artifacts/**
           draft: false
           prerelease: false
         env:
