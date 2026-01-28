@@ -1,4 +1,4 @@
-﻿# MachineID-Manage
+# MachineID-Manage
 
 <div align="center">
 
@@ -6,11 +6,12 @@
 
 **[English](README.md)** | **[中文](README.zh-CN.md)**
 
-*A Windows MachineGuid Manager built with Rust + Tauri 2*
+*A Windows Machine Code Manager built with Rust + Tauri 2 + Vue 3*
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2-blue.svg)](https://tauri.app/)
+[![Vue](https://img.shields.io/badge/Vue-3-4FC08D.svg)](https://vuejs.org/)
 [![Windows](https://img.shields.io/badge/Windows-10/11-blue.svg)]()
 [![Release](https://img.shields.io/github/v/release/luxiaosen8/MachineID-Manage)](https://github.com/luxiaosen8/MachineID-Manage/releases)
 
@@ -20,20 +21,30 @@
 
 ## Overview
 
-MachineID-Manage is a Windows MachineGuid management tool developed using **Rust + Tauri 2**. It enables users to read, backup, replace, and randomly generate Windows MachineGuid identifiers. The application provides a user-friendly graphical interface for performing system registry operations safely and efficiently.
+MachineID-Manage is a Windows machine code management tool built with **Rust + Tauri 2 + Vue 3**. It allows you to read, backup, replace, and randomly generate Windows MachineGuid (machine identifier). The application provides a modern graphical interface to help users safely and efficiently perform system registry operations.
 
-This project was entirely developed by **AI** and cannot guarantee complete functionality or freedom from bugs. Testing has been primarily conducted on **Windows 11**, and compatibility with other Windows versions is not guaranteed.
+### v2.0 Major Update
+
+🎉 **Brand new refactored version is now released!**
+
+- ✨ Frontend fully upgraded to **Vue 3 + TypeScript**
+- ⚡ **Vite** build tool for enhanced development experience
+- 🎨 **Tailwind CSS** modern UI design
+- 📦 **Pinia** state management
+- 🔧 Tauri 2.0 latest features support
+
+Check [REFACTORING.md](REFACTORING.md) for detailed refactoring information.
 
 ---
 
-## Download
+## Downloads
 
-### Latest Release (v1.4.0)
+### Latest Version (v2.0.0)
 
 | Platform | Installer | Portable |
 |----------|-----------|----------|
-| Windows x64 | [MachineID-Manage_1.4.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_1.4.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
-| Windows MSI | [MachineID-Manage_1.4.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+| Windows x64 | [MachineID-Manage_2.0.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.0.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_2.0.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
 
 > **Note**: All downloads are available on the [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) page.
 
@@ -43,36 +54,31 @@ This project was entirely developed by **AI** and cannot guarantee complete func
 
 | Icon | Feature | Description |
 |:----:|---------|-------------|
-| 📖 | Read MachineGuid | Read MachineGuid from Windows Registry |
-| 💾 | Backup Management | Backup and manage machine ID configurations |
-| 🔄 | Restore Backup | Restore machine ID from previous backups |
+| 📖 | Read Machine ID | Read MachineGuid from Windows registry |
+| 💾 | Backup Management | Backup and manage machine code configurations |
+| 🔄 | Restore Backup | Restore machine code from backup |
 | 🎲 | Random Generation | Generate random valid GUIDs |
-| 🔧 | Custom Replace | Replace with custom MachineGuid values |
-| 📋 | Copy Function | One-click copy to clipboard |
+| 🔧 | Custom Replacement | Replace with custom machine code |
+| 📋 | Copy Feature | One-click copy machine code to clipboard |
+| 🔒 | Permission Detection | Real-time admin permission status |
 
 ---
 
-## Platform Compatibility
+## Tech Stack
 
-### Feature Matrix
+### Backend
+- **Rust** - Systems programming language
+- **Tauri 2** - Cross-platform application framework
+- **winreg** - Windows registry operations
+- **tracing** - Structured logging
 
-| Feature | Windows | macOS | Linux | Notes |
-|:-------:|:-------:|:-----:|:-----:|-------|
-| Read Machine ID | ✅ | ✅ | ✅ | Full support on all platforms |
-| Write Machine ID | ✅ | ❌ | ✅ | macOS write not supported (system limitation) |
-| Backup | ✅ | ✅ | ✅ | Full support on all platforms |
-| Restore | ✅ | ❌ | ✅ | macOS restore not supported |
-| Random Generate | ✅ | ❌ | ❌ | Windows only |
-| Permission Check | ✅ | ✅ | ✅ | Full support on all platforms |
-| Admin Restart | ✅ | ✅ | ✅ | Full support on all platforms |
-| UI Rendering | ✅ | ✅ | ✅ | Full support on all platforms |
-| Internationalization | ✅ | ✅ | ✅ | Full support on all platforms |
-
-### Platform Notes
-
-- **Windows**: Full functionality available. Requires administrator privileges for registry modifications.
-- **macOS**: Read and backup operations supported. Write operations are not supported due to macOS system limitations on hardware UUID modification.
-- **Linux**: Read and backup operations supported. Write operations require root privileges.
+### Frontend
+- **Vue 3** - Progressive JavaScript framework
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Next-generation frontend build tool
+- **Pinia** - Vue state management
+- **Tailwind CSS** - Utility-first CSS framework
+- **VueUse** - Vue composition utilities
 
 ---
 
@@ -82,24 +88,24 @@ This project was entirely developed by **AI** and cannot guarantee complete func
 
 | Requirement | Details |
 |-------------|---------|
-| Operating System | Windows 10/11 |
-| Rust | Version 1.70+ |
-| Node.js | Version 18+ (for development) |
-| Administrator Rights | Required for registry modification |
+| OS | Windows 10/11 |
+| Rust | 1.70 or higher |
+| Node.js | 18+ (for development) |
+| Admin Rights | Required for registry modifications |
 
 ### Installation
 
-#### Option 1: Installer (Recommended)
+#### Method 1: Installer (Recommended)
 1. Download the latest `.msi` or `.exe` installer from [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
-2. Run the installer and follow the setup wizard
-3. Launch MachineID-Manage from the Start Menu
+2. Run the installer and follow the wizard
+3. Launch MachineID-Manage from the Start menu
 
-#### Option 2: Portable Version
-1. Download the `MachineID-Manage_*_windows_portable.zip` from [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
+#### Method 2: Portable (No Installation)
+1. Download `MachineID-Manage_*_windows_portable.zip` from [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases)
 2. Extract the ZIP file to your desired location
 3. Run `machineid-manage.exe` directly
 
-#### Option 3: Build from Source
+#### Method 3: Build from Source
 ```bash
 # Clone the repository
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
@@ -109,19 +115,19 @@ cd MachineID-Manage
 npm install
 
 # Start development server
-cargo tauri dev
+npm run tauri:dev
 
 # Build production version
-cargo tauri build
+npm run tauri:build
 ```
 
-### Operations Guide
+### Usage Instructions
 
-1. **Read MachineGuid** - Click "Read MachineGuid" to get the current MachineGuid
-2. **Backup** - Click "Backup" to save the current machine ID to local storage
-3. **Random Generate** - Click "Random Generate" to create and replace with a new random GUID
-4. **Custom Replace** - Enter a valid GUID format and confirm replacement
-5. **Restore Backup** - Select a backup from the list and click restore
+1. **Read Machine ID** - Automatically reads current MachineGuid on app startup
+2. **Backup Machine ID** - Click "Backup Machine ID" to save current machine code
+3. **Random Generation** - Click "Random Generate" to create a new random GUID
+4. **Custom Replacement** - Enter a valid GUID and confirm replacement
+5. **Restore Backup** - Select and restore from the backup list
 
 ---
 
@@ -131,69 +137,119 @@ cargo tauri build
 MachineID-Manage/
 ├── src-tauri/                # Tauri backend (Rust)
 │   ├── src/
-│   │   ├── main.rs          # Tauri command entry point
-│   │   └── machine_id.rs    # Machine ID read/write operations
-│   ├── Cargo.toml           # Rust dependencies configuration
+│   │   ├── main.rs          # Tauri command entry
+│   │   └── machine_id.rs    # Machine ID read/write logic
+│   ├── Cargo.toml           # Rust dependencies
 │   ├── tauri.conf.json      # Tauri configuration
-│   └── icons/               # Application icons
-├── src/                     # Frontend source code
-│   ├── index.html           # Main page
-│   ├── style.css            # Styles
-│   └── script.js            # Client-side logic
-├── tests/                   # Test files
-├── README.md                # Project documentation (English)
-├── README.zh-CN.md          # 项目说明（中文）
-├── CONTRIBUTING.md          # Contribution guidelines
-├── LICENSE                  # MIT License
-├── .github/
-│   └── workflows/           # GitHub Actions CI/CD
+│   └── icons/               # App icons
+├── src/                      # Vue 3 frontend
+│   ├── components/          # Vue components
+│   │   ├── ui/             # Base UI components
+│   │   ├── layout/         # Layout components
+│   │   ├── features/       # Feature components
+│   │   └── modals/         # Modal components
+│   ├── stores/             # Pinia state management
+│   ├── types/              # TypeScript types
+│   ├── utils/              # Utility functions
+│   ├── styles/             # Global styles
+│   ├── App.vue             # Root component
+│   └── main.ts             # Entry file
+├── package.json            # Node.js dependencies
+├── vite.config.ts          # Vite configuration
+├── tsconfig.json           # TypeScript configuration
+├── tailwind.config.js      # Tailwind configuration
+├── README.md               # Project documentation (English)
+├── README.zh-CN.md         # Project documentation (Chinese)
+├── REFACTORING.md          # Refactoring documentation
+├── CONTRIBUTING.md         # Contribution guidelines
+└── LICENSE                 # MIT License
 ```
 
 ---
 
-## Tech Stack
+## Development Guide
 
-- **Rust** - Systems programming language
-- **Tauri 2** - Cross-platform application framework
-- **Windows Registry** - System registry operations (winreg crate)
-- **HTML/CSS/JavaScript** - Frontend interface
+### Common Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode (with hot reload)
+npm run dev
+
+# Tauri development mode
+npm run tauri:dev
+
+# Build production version
+npm run build
+
+# Tauri build
+npm run tauri:build
+
+# Run tests
+npm run test
+
+# Lint code
+npm run lint
+
+# Format code
+npm run format
+```
+
+### Development Environment Setup
+
+1. Install [Rust](https://rustup.rs/)
+2. Install [Node.js](https://nodejs.org/) 18+
+3. Install Tauri CLI: `cargo install tauri-cli`
+4. Clone the project and install dependencies
 
 ---
 
-## Security Notes
+## Security Considerations
 
-> **WARNING**
+> **Warning**
 >
-> Modifying the Windows Registry carries inherent risks. Always create system backups before performing any operations.
+> Modifying the Windows registry carries inherent risks. Always create a system backup before performing any operations.
 
 ### Security Measures
 
 | Icon | Measure | Description |
 |:----:|---------|-------------|
-| 🔒 | Permission Check | Check administrator rights before write operations |
-| 💾 | Auto Backup | Automatic backup before modification |
-| ✅ | User Confirmation | Require user confirmation for dangerous operations |
-| 📝 | Operation Log | Log all registry modifications |
-| 🔍 | Input Validation | Validate GUID format before writing |
+| 🔒 | Permission Detection | Checks admin rights before write operations |
+| 💾 | Auto Backup | Automatically backs up before modifications |
+| ✅ | User Confirmation | Dangerous operations require user confirmation |
+| 📝 | Operation Logging | Records all registry modification operations |
+| 🔍 | Input Validation | Validates GUID format before writing |
 
 ### Security Recommendations
 
-1. **Always backup** - Export and save the current MachineGuid before use
-2. **Test first** - Verify operation effects in a test environment
-3. **Minimal permissions** - Only grant administrator rights when necessary
+1. **Always Backup** - Export and save your current MachineGuid before use
+2. **Test First** - Verify operations in a test environment
+3. **Least Privilege** - Grant admin rights only when necessary
 
 ---
 
 ## Changelog
 
-### v1.4.0 (2026-01-28)
-- Fixed GitHub Actions workflow for Tauri v2
-- Updated version to 1.4.0
-- Improved CI/CD pipeline
+### v2.0.0 (2026-01-29)
+- 🎉 **Major Refactoring Version**
+- Frontend fully upgraded to Vue 3 + TypeScript
+- Replaced traditional build with Vite
+- Introduced Pinia state management
+- Tailwind CSS modern UI
+- Full Tauri 2.0 support
+- Added permission visualization
+- Enhanced user experience
 
-### v1.3.7 (Previous)
-- Initial stable release
-- Basic MachineGuid management features
+### v1.4.0 (2026-01-28)
+- Fixed Tauri v2 GitHub Actions workflow
+- Version updated to 1.4.0
+- Improved CI/CD process
+
+### v1.3.7
+- Initial stable version
+- Basic machine code management features
 - Backup and restore functionality
 
 ---
@@ -206,7 +262,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for de
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is open-sourced under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 

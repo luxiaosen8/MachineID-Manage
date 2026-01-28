@@ -6,11 +6,12 @@
 
 **[English](README.md)** | **[中文](README.zh-CN.md)**
 
-*基于 Rust + Tauri 2 的 Windows 机器码管理器*
+*基于 Rust + Tauri 2 + Vue 3 的 Windows 机器码管理器*
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2-blue.svg)](https://tauri.app/)
+[![Vue](https://img.shields.io/badge/Vue-3-4FC08D.svg)](https://vuejs.org/)
 [![Windows](https://img.shields.io/badge/Windows-10/11-blue.svg)]()
 [![Release](https://img.shields.io/github/v/release/luxiaosen8/MachineID-Manage)](https://github.com/luxiaosen8/MachineID-Manage/releases)
 
@@ -20,20 +21,30 @@
 
 ## 项目简介
 
-MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码管理工具。它使能够读取、备份、替换和随机生成 Windows MachineGuid（机器码标识符）。该应用程序提供友好的图形界面，帮助用户安全高效地执行系统注册表操作。
+MachineID-Manage 是一款基于 **Rust + Tauri 2 + Vue 3** 开发的 Windows 机器码管理工具。它能够读取、备份、替换和随机生成 Windows MachineGuid（机器码标识符）。该应用程序提供现代化的图形界面，帮助用户安全高效地执行系统注册表操作。
 
-本项目**全程由 AI 开发**，无法保证功能性完善及无 BUG。项目已在 **Windows 11** 下测试有效，其他系统版本请自行测试。
+### v2.0 重大更新
+
+🎉 **全新重构版本现已发布！**
+
+- ✨ 前端全面升级为 **Vue 3 + TypeScript**
+- ⚡ 使用 **Vite** 构建工具，开发体验大幅提升
+- 🎨 **Tailwind CSS** 现代化 UI 设计
+- 📦 **Pinia** 状态管理
+- 🔧 Tauri 2.0 最新特性支持
+
+查看 [REFACTORING.md](REFACTORING.md) 了解详细重构内容。
 
 ---
 
 ## 下载
 
-### 最新版本 (v1.4.0)
+### 最新版本 (v2.0.0)
 
 | 平台 | 安装版 | 免安装版(便携版) |
 |------|--------|------------------|
-| Windows x64 | [MachineID-Manage_1.4.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_1.4.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
-| Windows MSI | [MachineID-Manage_1.4.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+| Windows x64 | [MachineID-Manage_2.0.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.0.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_2.0.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
 
 > **注意**: 所有下载均可在 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 页面获取。
 
@@ -49,30 +60,25 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码�
 | 🎲 | 随机生成 | 生成随机有效的 GUID |
 | 🔧 | 自定义替换 | 使用自定义机器码替换 |
 | 📋 | 复制功能 | 一键复制机器码到剪贴板 |
+| 🔒 | 权限检测 | 实时显示管理员权限状态 |
 
 ---
 
-## 平台兼容性
+## 技术栈
 
-### 功能兼容性矩阵
+### 后端
+- **Rust** - 系统编程语言
+- **Tauri 2** - 跨平台应用框架
+- **winreg** - Windows 注册表操作
+- **tracing** - 结构化日志
 
-| 功能 | Windows | macOS | Linux | 备注 |
-|:----:|:-------:|:-----:|:-----:|------|
-| 读取机器码 | ✅ | ✅ | ✅ | 全平台支持 |
-| 写入机器码 | ✅ | ❌ | ✅ | macOS 暂不支持写入（系统限制） |
-| 备份功能 | ✅ | ✅ | ✅ | 全平台支持 |
-| 恢复备份 | ✅ | ❌ | ✅ | macOS 暂不支持恢复 |
-| 随机生成 | ✅ | ❌ | ❌ | 仅 Windows 支持 |
-| 权限检查 | ✅ | ✅ | ✅ | 全平台支持 |
-| 管理员重启 | ✅ | ✅ | ✅ | 全平台支持 |
-| 界面渲染 | ✅ | ✅ | ✅ | 全平台支持 |
-| 国际化 | ✅ | ✅ | ✅ | 全平台支持 |
-
-### 平台说明
-
-- **Windows**: 完整功能可用。修改注册表需要管理员权限。
-- **macOS**: 支持读取和备份功能。不支持写入操作，因为 macOS 系统限制了对硬件 UUID 的修改。
-- **Linux**: 支持读取和备份功能。写入操作需要 root 权限。
+### 前端
+- **Vue 3** - 渐进式 JavaScript 框架
+- **TypeScript** - 类型安全的 JavaScript
+- **Vite** - 下一代前端构建工具
+- **Pinia** - Vue 状态管理
+- **Tailwind CSS** - 实用优先的 CSS 框架
+- **VueUse** - Vue 组合式工具集
 
 ---
 
@@ -84,7 +90,7 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2** 开发的 Windows 机器码�
 |------|------|
 | 操作系统 | Windows 10/11 |
 | Rust | 1.70 或更高版本 |
-| Node.js | 18+（用于开发） |
+| Node.js | 18+（用于开发）|
 | 管理员权限 | 修改注册表时需要 |
 
 ### 安装方法
@@ -109,19 +115,19 @@ cd MachineID-Manage
 npm install
 
 # 启动开发服务器
-cargo tauri dev
+npm run tauri:dev
 
 # 构建生产版本
-cargo tauri build
+npm run tauri:build
 ```
 
 ### 使用说明
 
-1. **读取机器码** - 点击"读取机器码"按钮获取当前 MachineGuid
-2. **备份机器码** - 点击"备份"保存当前机器码到本地存储
-3. **随机生成** - 点击"随机生成"创建新的随机 GUID 并替换
-4. **自定义替换** - 输入有效的 GUID 格式并确认替换
-5. **恢复备份** - 在备份列表中选择备份并点击恢复
+1. **读取机器码** - 应用启动时自动读取当前 MachineGuid
+2. **备份机器码** - 点击"备份机器码"保存当前机器码
+3. **随机生成** - 点击"随机生成"创建新的随机 GUID
+4. **自定义替换** - 输入有效的 GUID 并确认替换
+5. **恢复备份** - 在备份列表中选择并恢复
 
 ---
 
@@ -136,27 +142,67 @@ MachineID-Manage/
 │   ├── Cargo.toml           # Rust 依赖配置
 │   ├── tauri.conf.json      # Tauri 配置
 │   └── icons/               # 应用图标
-├── src/                     # 前端源码
-│   ├── index.html           # 主页面
-│   ├── style.css            # 样式文件
-│   └── script.js            # 交互逻辑
-├── tests/                   # 测试文件
-├── README.md                # 项目说明（英文）
-├── README.zh-CN.md          # 项目说明（中文）
-├── CONTRIBUTING.md          # 贡献指南
-├── LICENSE                  # MIT 开源协议
-├── .github/
-│   └── workflows/           # GitHub Actions CI/CD
+├── src/                      # Vue 3 前端
+│   ├── components/          # Vue 组件
+│   │   ├── ui/             # 基础 UI 组件
+│   │   ├── layout/         # 布局组件
+│   │   ├── features/       # 功能组件
+│   │   └── modals/         # 模态框组件
+│   ├── stores/             # Pinia 状态管理
+│   ├── types/              # TypeScript 类型
+│   ├── utils/              # 工具函数
+│   ├── styles/             # 全局样式
+│   ├── App.vue             # 根组件
+│   └── main.ts             # 入口文件
+├── package.json            # Node.js 依赖
+├── vite.config.ts          # Vite 配置
+├── tsconfig.json           # TypeScript 配置
+├── tailwind.config.js      # Tailwind 配置
+├── README.md               # 项目说明（英文）
+├── README.zh-CN.md         # 项目说明（中文）
+├── REFACTORING.md          # 重构文档
+├── CONTRIBUTING.md         # 贡献指南
+└── LICENSE                 # MIT 开源协议
 ```
 
 ---
 
-## 技术栈
+## 开发指南
 
-- **Rust** - 系统编程语言
-- **Tauri 2** - 跨平台应用框架
-- **Windows Registry** - 系统注册表操作（winreg crate）
-- **HTML/CSS/JavaScript** - 前端界面
+### 常用命令
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式（带热重载）
+npm run dev
+
+# Tauri 开发模式
+npm run tauri:dev
+
+# 构建生产版本
+npm run build
+
+# Tauri 构建
+npm run tauri:build
+
+# 运行测试
+npm run test
+
+# 代码检查
+npm run lint
+
+# 格式化代码
+npm run format
+```
+
+### 开发环境配置
+
+1. 安装 [Rust](https://rustup.rs/)
+2. 安装 [Node.js](https://nodejs.org/) 18+
+3. 安装 Tauri CLI: `cargo install tauri-cli`
+4. 克隆项目并安装依赖
 
 ---
 
@@ -186,12 +232,22 @@ MachineID-Manage/
 
 ## 更新日志
 
+### v2.0.0 (2026-01-29)
+- 🎉 **重大重构版本**
+- 前端全面升级为 Vue 3 + TypeScript
+- 使用 Vite 替代传统构建方式
+- 引入 Pinia 状态管理
+- Tailwind CSS 现代化 UI
+- Tauri 2.0 完整支持
+- 新增权限可视化
+- 优化用户体验
+
 ### v1.4.0 (2026-01-28)
 - 修复 Tauri v2 的 GitHub Actions 工作流
 - 版本更新至 1.4.0
 - 改进 CI/CD 流程
 
-### v1.3.7 (上一版本)
+### v1.3.7
 - 初始稳定版本
 - 基础机器码管理功能
 - 备份和恢复功能
