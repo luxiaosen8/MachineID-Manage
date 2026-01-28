@@ -62,12 +62,15 @@ fn read_machine_id() -> Result<MachineIdResponse, String> {
 fn backup_machine_guid(description: Option<String>) -> Result<BackupResponse, String> {
     info!("备份机器码");
     match backup_current_machine_guid(description) {
-        Ok(backup) => Ok(BackupResponse {
-            success: true,
-            backup,
-            skipped: backup.is_none(),
-            error: None,
-        }),
+        Ok(backup) => {
+            let skipped = backup.is_none();
+            Ok(BackupResponse {
+                success: true,
+                backup,
+                skipped,
+                error: None,
+            })
+        }
         Err(e) => {
             warn!("备份机器码失败: {}", e);
             Ok(BackupResponse {
