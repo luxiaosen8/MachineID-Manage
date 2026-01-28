@@ -8,13 +8,13 @@ repository.workspace = true
 license.workspace = true
 
 [build-dependencies]
-tauri-build = { version = "2.0", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = ["tray-icon"] }
-tauri-plugin-shell = "2.0"
-tauri-plugin-dialog = "2.0"
-tauri-plugin-clipboard-manager = "2.0"
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -25,8 +25,6 @@ tokio = { version = "1.35", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 config = "0.14"
-specta = "1.0"
-tauri-specta = { version = "2.0", features = ["derive", "typescript"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
