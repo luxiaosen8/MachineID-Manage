@@ -15,74 +15,112 @@ permissions:
   contents: write
 
 jobs:
-  publish-tauri:
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
-    runs-on: ${{ matrix.platform }}
+  # Windows Build
+  release-windows:
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: setup node
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: x86_64-pc-windows-msvc
+
+      - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          rustup default stable
+          cargo install tauri-cli --locked --version "^1.5"
 
-      - uses: tauri-apps/tauri-action@v1
+      - name: Build with Tauri
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cargo tauri build --verbose 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tagName: ${{ github.event.inputs.version || github.ref_name }}
-          releaseName: 'MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}'
-          releaseBody: >-
-            ## MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
+          name: windows-release
+          path: src-tauri/target/release/bundle/
+          retention-days: 30
 
-            ### 使用方法 / Usage
-            1. **Windows**: 下载 `.msi` 或 `.exe` 文件并运行
-            2. **macOS**: 下载 `.dmg` 文件并挂载安装，或下载 `.app` 文件
-            3. **Linux**: 下载 `.AppImage` 或 `.deb` 文件
+  # macOS Build
+  release-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            ### 注意事项 / Notes
-            - Windows 系统需要管理员权限才能修改机器码
-            - macOS 版本功能受限，仅支持查看机器码信息
-            - 修改机器码功能需要 root 权限
-            - 建议在修改前备份原始机器码
-            - 修改后可能需要重启应用程序才能生效
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
-            ### 主要功能 / Main Features
-            - 查看当前系统机器码
-            - 备份原始机器码
-            - 生成新的随机机器码
-            - 恢复原始机器码
-            - 多语言支持（中文/英文）
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-            ### 更新状态 / Update Status
-            - ✅ Windows x64
-            - ✅ macOS x64 (Intel)
-            - ✅ macOS ARM64 (Apple Silicon)
-            - ✅ Linux x64
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+      - name: Install dependencies
+        run: |
+          rustup default stable
+          cargo install tauri-cli --locked --version "^1.5"
+
+      - name: Build with Tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cargo tauri build --verbose
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: src-tauri/target/release/bundle/
+          retention-days: 30
+
+  # Linux Build
+  release-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          rustup default stable
+          cargo install tauri-cli --locked --version "^1.5"
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Build with Tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cargo tauri build --verbose
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: src-tauri/target/release/bundle/
+          retention-days: 30

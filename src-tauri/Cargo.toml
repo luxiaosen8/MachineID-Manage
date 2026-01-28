@@ -8,17 +8,16 @@ repository.workspace = true
 license.workspace = true
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "1.5", features = ["api-all"] }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 regex = "1.10"
 rand = "0.8"
-cookie = "0.17.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.50"
@@ -36,9 +35,6 @@ custom-protocol = ["tauri/custom-protocol"]
 [profile.release]
 panic = "abort"
 codegen-units = 1
-lto = false
-opt-level = "s"
+lto = true
+opt-level = "z"
 strip = true
-
-[target.'cfg(target_os = "macos")'.profile.release]
-lto = "off"
