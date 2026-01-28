@@ -4,12 +4,6 @@
   "description": "Default capabilities for MachineID-Manage",
   "windows": ["main"],
   "permissions": [
-    "core:default",
-    "core:window:default",
-    "core:window:allow-close",
-    "core:window:allow-minimize",
-    "core:window:allow-maximize",
-    "core:window:allow-unmaximize",
-    "core:window:allow-start-dragging"
+    "core:default"
   ]
 }
