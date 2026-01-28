@@ -201,6 +201,7 @@ jobs:
       - name: Build with Tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUSTFLAGS: "-C link-arg=-fuse-ld=lld -C codegen-units=1"
         run: |
           cargo tauri build --verbose
 
