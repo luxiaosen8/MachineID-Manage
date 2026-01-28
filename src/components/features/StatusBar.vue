@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Info, CheckCircle, AlertCircle, Loader2 } from 'lucide-vue-next';
+import { Info } from 'lucide-vue-next';
 import { useMachineIdStore, useBackupStore } from '@stores';
 
 const machineIdStore = useMachineIdStore();
