@@ -15,151 +15,62 @@ permissions:
   contents: write
 
 jobs:
-  # Windows Build
-  release-windows:
-    runs-on: windows-latest
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+    runs-on: ${{ matrix.platform }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          target: x86_64-pc-windows-msvc
-
-      - name: Install Node.js
+      - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          cargo install tauri-cli --locked --version "^2"
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Clear Cargo cache
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
-          cargo clean
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Clear Cargo cache
-        run: |
-          cargo clean
+      - name: install frontend dependencies
+        run: npm install
 
-      - name: Clear Cargo cache
-        run: |
-          cargo clean
-
-      - name: Build with Tauri
-        shell: pwsh
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cargo tauri build --verbose 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Build failed with exit code $LASTEXITCODE"
-            exit 1
-          }
-
-      - name: List build artifacts
-        shell: pwsh
-        run: |
-          Write-Host "Current directory: $(Get-Location)"
-          Write-Host "Checking for bundle directory..."
-          $bundlePath = "src-tauri/target/release/bundle"
-          if (Test-Path $bundlePath) {
-            Write-Host "Bundle directory found!"
-            Get-ChildItem -Path $bundlePath -Recurse -Force
-          } else {
-            Write-Host "Bundle directory not found at $bundlePath"
-            Write-Host "Checking src-tauri/target/release directory..."
-            if (Test-Path "src-tauri/target/release") {
-              Get-ChildItem -Path "src-tauri/target/release" -Force | Select-Object -First 30
-            } else {
-              Write-Host "target/release directory not found"
-            }
-          }
-
-      - name: Create portable package (Windows)
-        shell: pwsh
-        run: |
-          $version = "${{ github.event.inputs.version || github.ref_name }}".TrimStart('v')
-          $srcDir = "src-tauri/target/release/bundle"
-          $outDir = "release-output"
-          
-          # 创建输出目录
-          New-Item -ItemType Directory -Force -Path $outDir
-          
-          # 复制 bundle 文件
-          if (Test-Path $srcDir) {
-            Write-Host "Copying bundle files from $srcDir..."
-            Get-ChildItem -Path $srcDir -Recurse -Include *.msi, *.exe, *.zip -Force | ForEach-Object {
-              Copy-Item $_.FullName -Destination "$outDir/"
-              Write-Host "Copied: $($_.Name)"
-            }
-          } else {
-            Write-Host "Warning: Bundle directory not found at $srcDir"
-          }
-
-          # 创建便携版 ZIP
-          $portableDir = "$outDir/portable"
-          New-Item -ItemType Directory -Force -Path $portableDir
-          
-          # 复制可执行文件
-          $exePath = "src-tauri/target/release/machineid-manage.exe"
-          if (Test-Path $exePath) {
-            Copy-Item $exePath "$portableDir/"
-            Write-Host "Copied executable: $exePath"
-          } else {
-            Write-Host "Warning: Executable not found at $exePath"
-            # 尝试查找任何 .exe 文件
-            if (Test-Path "src-tauri/target/release") {
-              $foundExe = Get-ChildItem -Path "src-tauri/target/release" -Filter "*.exe" -Force | Select-Object -First 1
-              if ($foundExe) {
-                Copy-Item $foundExe.FullName "$portableDir/"
-                Write-Host "Found and copied: $($foundExe.Name)"
-              }
-            }
-          }
-          
-          # 创建便携版压缩包
-          $portableFiles = Get-ChildItem -Path $portableDir -Force -ErrorAction SilentlyContinue
-          if ($portableFiles -and $portableFiles.Count -gt 0) {
-            Compress-Archive -Path "$portableDir/*" -DestinationPath "$outDir/MachineID-Manage_${version}_windows_portable.zip" -Force
-            Write-Host "Created portable zip"
-          } else {
-            Write-Host "Warning: No files in portable directory"
-          }
-
-          Write-Host "Final output directory contents:"
-          Get-ChildItem -Path $outDir -Force
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
         with:
-          name: machineid-manage-windows
-          path: release-output/
-          retention-days: 1
-
-      - name: Upload Windows Release Assets
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        with:
-          files: |
-            release-output/*.msi
-            release-output/*.exe
-            release-output/*_portable.zip
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          draft: true
-          generate_release_notes: true
-          body: |
-            ## MachineID-Manage v${{ github.event.inputs.version || github.ref_name }}
+          tagName: ${{ github.event.inputs.version || github.ref_name }}
+          releaseName: 'MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}'
+          releaseBody: |
+            ## MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
 
             ### 使用方法 / Usage
-            1. **安装版 / Installer**: 下载 `.msi` 文件并运行安装程序
-            2. **便携版 / Portable**: 下载 `_portable.zip` 文件，解压后直接运行 `machineid-manage.exe`
+            1. **Windows**: 下载 `.msi` 或 `.exe` 文件并运行
+            2. **macOS**: 下载 `.dmg` 文件并挂载安装，或下载 `.app` 文件
+            3. **Linux**: 下载 `.AppImage` 或 `.deb` 文件
 
             ### 注意事项 / Notes
             - Windows 系统需要管理员权限才能修改机器码
+            - macOS 版本功能受限，仅支持查看机器码信息
+            - 修改机器码功能需要 root 权限
             - 建议在修改前备份原始机器码
             - 修改后可能需要重启应用程序才能生效
 
@@ -171,188 +82,10 @@ jobs:
             - 多语言支持（中文/英文）
 
             ### 更新状态 / Update Status
-            - ✅ Windows x64 安装版
-            - ✅ Windows x64 便携版
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # macOS Build
-  release-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin,aarch64-apple-darwin
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          cargo install tauri-cli --locked --version "^2"
-
-      - name: Build with Tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUSTFLAGS: "-C link-arg=-fuse-ld=lld -C codegen-units=1"
-        run: |
-          cargo tauri build --verbose
-
-      - name: List build artifacts
-        run: |
-          ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "Bundle directory not found"
-          find src-tauri/target/release -name "*.dmg" -o -name "*.app" 2>/dev/null | head -20
-
-      - name: Create portable package (macOS)
-        run: |
-          version="${{ github.event.inputs.version || github.ref_name }}"
-          version="${version#v}"
-          
-          srcDir="src-tauri/target/release/bundle"
-          outDir="release-output"
-          mkdir -p "$outDir"
-
-          if [ -d "$srcDir" ]; then
-            find "$srcDir" -name "*.dmg" -exec cp {} "$outDir/" \; 2>/dev/null || true
-            find "$srcDir" -name "*.app" -exec cp -R {} "$outDir/" \; 2>/dev/null || true
-          else
-            echo "Bundle directory not found at $srcDir"
-          fi
-
-          # 创建便携版
-          if [ -f "src-tauri/target/release/machineid-manage" ]; then
-            mkdir -p "$outDir/portable"
-            cp "src-tauri/target/release/machineid-manage" "$outDir/portable/"
-            cd "$outDir/portable"
-            zip -r "../MachineID-Manage_${version}_macos_portable.zip" . 2>/dev/null || true
-            cd ../..
-          fi
-
-          ls -la "$outDir" 2>/dev/null || echo "Output directory is empty"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: machineid-manage-macos
-          path: release-output/
-          retention-days: 1
-
-      - name: Upload macOS Release Assets
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        with:
-          files: |
-            release-output/*.dmg
-            release-output/*_portable.zip
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          draft: true
-          body: |
-            ## MachineID-Manage macOS v${{ github.event.inputs.version || github.ref_name }}
-
-            ### 使用方法 / Usage
-            1. **安装版 / Installer**: 下载 `.dmg` 文件并挂载安装
-            2. **便携版 / Portable**: 下载 `_portable.zip` 文件，解压后运行
-
-            ### 注意事项 / Notes
-            - macOS 版本功能受限，仅支持查看机器码信息
-            - 修改机器码功能需要 root 权限
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Linux Build
-  release-linux:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          rustup default stable
-          cargo install tauri-cli --locked --version "^2"
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Build with Tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cargo tauri build --verbose
-
-      - name: List build artifacts
-        run: |
-          ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "Bundle directory not found"
-          find src-tauri/target/release -name "*.AppImage" -o -name "*.deb" 2>/dev/null | head -20
-
-      - name: Create portable package (Linux)
-        run: |
-          version="${{ github.event.inputs.version || github.ref_name }}"
-          version="${version#v}"
-          
-          srcDir="src-tauri/target/release/bundle"
-          outDir="release-output"
-          mkdir -p "$outDir"
-
-          if [ -d "$srcDir" ]; then
-            find "$srcDir" -name "*.AppImage" -exec cp {} "$outDir/" \; 2>/dev/null || true
-            find "$srcDir" -name "*.deb" -exec cp {} "$outDir/" \; 2>/dev/null || true
-          else
-            echo "Bundle directory not found at $srcDir"
-          fi
-
-          # 创建便携版
-          if [ -f "src-tauri/target/release/machineid-manage" ]; then
-            mkdir -p "$outDir/portable"
-            cp "src-tauri/target/release/machineid-manage" "$outDir/portable/"
-            cd "$outDir/portable"
-            tar -czf "../MachineID-Manage_${version}_linux_portable.tar.gz" .
-            cd ../..
-          fi
-
-          ls -la "$outDir" 2>/dev/null || echo "Output directory is empty"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: machineid-manage-linux
-          path: release-output/
-          retention-days: 1
-
-      - name: Upload Linux Release Assets
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        with:
-          files: |
-            release-output/*.AppImage
-            release-output/*.deb
-            release-output/*_portable.tar.gz
-          tag_name: ${{ github.event.inputs.version || github.ref_name }}
-          draft: true
-          body: |
-            ## MachineID-Manage Linux v${{ github.event.inputs.version || github.ref_name }}
-
-            ### 使用方法 / Usage
-            1. **AppImage**: 下载 `.AppImage` 文件，赋予执行权限后运行
-            2. **DEB 包**: 下载 `.deb` 文件并使用 `dpkg -i` 安装
-            3. **便携版 / Portable**: 下载 `_portable.tar.gz` 文件，解压后运行
-
-            ### 注意事项 / Notes
-            - Linux 版本功能受限，仅支持查看机器码信息
-            - 修改机器码功能需要 root 权限
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - ✅ Windows x64
+            - ✅ macOS x64 (Intel)
+            - ✅ macOS ARM64 (Apple Silicon)
+            - ✅ Linux x64
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
