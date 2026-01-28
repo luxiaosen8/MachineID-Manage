@@ -8,6 +8,74 @@ use winreg::enums::*;
 #[cfg(windows)]
 use winreg::RegKey;
 
+/// 获取备份文件路径
+/// 优先使用应用程序数据目录，确保有写入权限
+fn get_backup_file_path() -> Result<PathBuf, BackupError> {
+    // 检查测试环境变量
+    if let Ok(path_str) = std::env::var("BACKUP_TEST_PATH") {
+        return Ok(PathBuf::from(path_str));
+    }
+
+    // 使用系统应用程序数据目录
+    let app_data_dir = get_app_data_dir()?;
+    
+    // 确保目录存在
+    if !app_data_dir.exists() {
+        fs::create_dir_all(&app_data_dir)
+            .map_err(|e| BackupError::StorageError(format!("创建备份目录失败: {}", e)))?;
+    }
+    
+    let mut path = app_data_dir;
+    path.push("backups.json");
+    Ok(path)
+}
+
+/// 获取应用程序数据目录
+#[cfg(windows)]
+fn get_app_data_dir() -> Result<PathBuf, BackupError> {
+    // Windows: 使用 %APPDATA%\MachineID-Manage
+    let app_data = std::env::var("APPDATA")
+        .map_err(|_| BackupError::StorageError("无法获取 APPDATA 目录".to_string()))?;
+    let mut path = PathBuf::from(app_data);
+    path.push("MachineID-Manage");
+    Ok(path)
+}
+
+#[cfg(target_os = "macos")]
+fn get_app_data_dir() -> Result<PathBuf, BackupError> {
+    // macOS: 使用 ~/Library/Application Support/MachineID-Manage
+    let home = std::env::var("HOME")
+        .map_err(|_| BackupError::StorageError("无法获取 HOME 目录".to_string()))?;
+    let mut path = PathBuf::from(home);
+    path.push("Library");
+    path.push("Application Support");
+    path.push("MachineID-Manage");
+    Ok(path)
+}
+
+#[cfg(target_os = "linux")]
+fn get_app_data_dir() -> Result<PathBuf, BackupError> {
+    // Linux: 使用 ~/.local/share/MachineID-Manage 或 $XDG_DATA_HOME/MachineID-Manage
+    if let Ok(xdg_data_home) = std::env::var("XDG_DATA_HOME") {
+        let mut path = PathBuf::from(xdg_data_home);
+        path.push("MachineID-Manage");
+        return Ok(path);
+    }
+    
+    let home = std::env::var("HOME")
+        .map_err(|_| BackupError::StorageError("无法获取 HOME 目录".to_string()))?;
+    let mut path = PathBuf::from(home);
+    path.push(".local");
+    path.push("share");
+    path.push("MachineID-Manage");
+    Ok(path)
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+fn get_app_data_dir() -> Result<PathBuf, BackupError> {
+    Err(BackupError::StorageError("不支持的操作系统".to_string()))
+}
+
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 pub enum BackupError {
@@ -91,15 +159,6 @@ fn get_registry_path() -> &'static str {
     "SOFTWARE\\Microsoft\\Cryptography"
 }
 
-fn get_backup_file_path() -> PathBuf {
-    if let Ok(path_str) = std::env::var("BACKUP_TEST_PATH") {
-        return PathBuf::from(path_str);
-    }
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("backups.json");
-    path
-}
-
 #[cfg(windows)]
 pub fn check_admin_permissions() -> bool {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -108,7 +167,31 @@ pub fn check_admin_permissions() -> bool {
         .is_ok()
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+pub fn check_admin_permissions() -> bool {
+    // 使用标准库检查是否以 root 运行
+    std::process::Command::new("id")
+        .arg("-u")
+        .output()
+        .map(|output| {
+            String::from_utf8_lossy(&output.stdout).trim() == "0"
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(target_os = "linux")]
+pub fn check_admin_permissions() -> bool {
+    // 使用标准库检查是否以 root 运行
+    std::process::Command::new("id")
+        .arg("-u")
+        .output()
+        .map(|output| {
+            String::from_utf8_lossy(&output.stdout).trim() == "0"
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 pub fn check_admin_permissions() -> bool {
     false
 }
@@ -136,7 +219,7 @@ pub fn test_registry_write_access() -> Result<(), BackupError> {
 }
 
 fn load_backup_store() -> Result<BackupStore, BackupError> {
-    let path = get_backup_file_path();
+    let path = get_backup_file_path()?;
 
     if !path.exists() {
         return Ok(BackupStore::new());
@@ -149,7 +232,7 @@ fn load_backup_store() -> Result<BackupStore, BackupError> {
 }
 
 fn save_backup_store(store: &BackupStore) -> Result<(), BackupError> {
-    let path = get_backup_file_path();
+    let path = get_backup_file_path()?;
     let content = serde_json::to_string_pretty(store)
         .map_err(|e| BackupError::StorageError(e.to_string()))?;
 
@@ -297,7 +380,47 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     })
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+pub fn read_machine_guid() -> Result<MachineId, BackupError> {
+    use std::process::Command;
+    
+    let output = Command::new("ioreg")
+        .args(&["-rd1", "-c", "IOPlatformExpertDevice"])
+        .output()
+        .map_err(|e| BackupError::RegistryError(format!("Failed to execute ioreg: {}", e)))?;
+    
+    let output_str = String::from_utf8_lossy(&output.stdout);
+    
+    for line in output_str.lines() {
+        if line.contains("IOPlatformUUID") {
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start + 1..].find('"') {
+                    let uuid = &line[start + 1..start + 1 + end];
+                    return Ok(MachineId {
+                        guid: uuid.to_string(),
+                        source: "IOPlatformUUID".to_string(),
+                    });
+                }
+            }
+        }
+    }
+    
+    Err(BackupError::RegistryError("Could not find IOPlatformUUID".to_string()))
+}
+
+#[cfg(target_os = "linux")]
+pub fn read_machine_guid() -> Result<MachineId, BackupError> {
+    let machine_id = fs::read_to_string("/etc/machine-id")
+        .or_else(|_| fs::read_to_string("/var/lib/dbus/machine-id"))
+        .map_err(|e| BackupError::RegistryError(format!("Failed to read machine-id: {}", e)))?;
+    
+    Ok(MachineId {
+        guid: machine_id.trim().to_string(),
+        source: "/etc/machine-id".to_string(),
+    })
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     Err(BackupError::UnsupportedPlatform)
 }

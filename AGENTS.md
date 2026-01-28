@@ -119,6 +119,24 @@ MachineID-Manage/
 
 详见 [SECURITY.md](SECURITY.md)
 
+## GitHub Actions 自动发布规则
+
+### 触发条件（全部自动触发，无需手动操作）
+
+1. **Push 到 master/main 分支** - 自动触发构建和发布
+2. **PR 合并到 master/main 分支** - 自动触发构建和发布
+3. **推送标签 (v*)** - 自动触发版本发布
+
+### 禁止手动触发
+- ❌ 不使用 `workflow_dispatch`
+- ❌ 不需要手动点击 "Run workflow"
+- ✅ 所有发布流程完全自动化
+
+### 工作流配置位置
+- 文件: `.github/workflows/release.yml`
+- 平台: Windows x64, macOS x64, macOS ARM64, Linux x64
+- 输出: 安装版 + 便携版
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
@@ -143,3 +161,4 @@ MachineID-Manage/
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+- **GitHub Actions 全部自动触发，禁止手动触发工作流**

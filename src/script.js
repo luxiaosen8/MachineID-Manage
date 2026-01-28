@@ -3,12 +3,27 @@
 console.log('MachineID-Manage Initializing...');
 
 let backupsData = [];
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '1.4.0';
 
-const MOCK_REGISTRY_SOURCE = 'HKLM\\SOFTWARE\\Microsoft\\Cryptography';
+// 根据平台返回不同的模拟数据源
+function getMockRegistrySource() {
+    const platform = navigator.platform.toLowerCase();
+    if (platform.includes('win')) {
+        return 'HKLM\\SOFTWARE\\Microsoft\\Cryptography';
+    } else if (platform.includes('mac') || platform.includes('darwin')) {
+        return 'IOPlatformUUID';
+    } else {
+        return '/etc/machine-id';
+    }
+}
+
+const MOCK_REGISTRY_SOURCE = getMockRegistrySource();
 
 window.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM loaded, initializing i18n...');
+    console.log('MachineID-Manage Initializing...');
+
+    // 更新版本号显示
+    updateVersionDisplay();
 
     await window.i18n.init();
     window.i18n.updateAllTexts();
@@ -37,6 +52,90 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function _(key, params = {}) {
     return window.i18n ? window.i18n.t(key, params) : key;
+}
+
+// 更新版本号显示
+function updateVersionDisplay() {
+    const versionElement = document.querySelector('[data-i18n="footer.version"]');
+    if (versionElement) {
+        versionElement.setAttribute('data-i18n-params', JSON.stringify({ version: APP_VERSION }));
+        versionElement.textContent = _('footer.version', { version: APP_VERSION });
+    }
+}
+
+// 统一确认对话框
+let confirmDialogResolve = null;
+
+function showConfirmDialog(title, message, confirmText = null, cancelText = null) {
+    return new Promise((resolve) => {
+        confirmDialogResolve = resolve;
+
+        const modal = document.getElementById('confirm-dialog-modal');
+        const titleEl = document.getElementById('confirm-dialog-title');
+        const messageEl = document.getElementById('confirm-dialog-message');
+        const confirmBtn = document.getElementById('confirm-dialog-confirm');
+        const cancelBtn = document.getElementById('confirm-dialog-cancel');
+
+        if (!modal || !titleEl || !messageEl || !confirmBtn || !cancelBtn) {
+            // 如果找不到元素，回退到原生 confirm
+            resolve(confirm(message));
+            return;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        if (confirmText) {
+            confirmBtn.textContent = confirmText;
+        } else {
+            confirmBtn.textContent = _('button.confirm');
+        }
+
+        if (cancelText) {
+            cancelBtn.textContent = cancelText;
+        } else {
+            cancelBtn.textContent = _('button.cancel');
+        }
+
+        modal.classList.add('show');
+
+        // 绑定按钮事件
+        const handleConfirm = () => {
+            closeConfirmDialog();
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            closeConfirmDialog();
+            resolve(false);
+        };
+
+        confirmBtn.onclick = handleConfirm;
+        cancelBtn.onclick = handleCancel;
+
+        // 点击背景关闭
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        };
+
+        // ESC 键关闭
+        const handleKeydown = (e) => {
+            if (e.key === 'Escape') {
+                handleCancel();
+                document.removeEventListener('keydown', handleKeydown);
+            }
+        };
+        document.addEventListener('keydown', handleKeydown);
+    });
+}
+
+function closeConfirmDialog() {
+    const modal = document.getElementById('confirm-dialog-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
 }
 
 function updateStatus(messageKey, params = {}) {
@@ -103,38 +202,55 @@ async function requestAdminRestart() {
 
     try {
         const { app } = window.__TAURI__.core;
+        const { platform } = await import('@tauri-apps/plugin-os');
+        const currentPlatform = await platform();
         const appPath = await app.path.executablePath();
 
-        console.log('Attempting to restart with admin privileges:', appPath);
+        console.log('Attempting to restart with admin privileges on platform:', currentPlatform);
 
-        const { Shell } = await import('@tauri-apps/plugin/shell');
-        const shell = await Shell.create();
-        await shell.sidecar('shell').execute(`powershell.exe -Command "Start-Process '${appPath}' -Verb RunAs"`);
+        const { Command } = await import('@tauri-apps/plugin/shell');
+        let command;
 
+        switch (currentPlatform) {
+            case 'win32':
+                // Windows: 使用 PowerShell
+                command = await Command.create('powershell.exe', [
+                    '-Command',
+                    `Start-Process '${appPath}' -Verb RunAs`
+                ]);
+                break;
+
+            case 'darwin':
+                // macOS: 使用 osascript
+                command = await Command.create('osascript', [
+                    '-e',
+                    `do shell script "${appPath}" with administrator privileges`
+                ]);
+                break;
+
+            case 'linux':
+                // Linux: 使用 pkexec
+                command = await Command.create('pkexec', [appPath]);
+                break;
+
+            default:
+                throw new Error(`Unsupported platform: ${currentPlatform}`);
+        }
+
+        await command.execute();
         await app.exit(0);
-    } catch (shellError) {
-        console.warn('PowerShell method failed, trying fallback:', shellError);
 
+    } catch (error) {
+        console.error('Failed to restart with elevated privileges:', error);
+
+        // 尝试最后的备选方案
         try {
             const { app } = window.__TAURI__.core;
-            const appPath = await app.path.executablePath();
-
-            const { Command } = await import('@tauri-apps/plugin/shell');
-            const command = await Command.create('powershell.exe', ['-Command', `Start-Process '${appPath}' -Verb RunAs`]);
-            await command.execute();
-
+            await app.relaunch();
             await app.exit(0);
-        } catch (fallbackError) {
-            console.warn('Fallback method also failed:', fallbackError);
-
-            try {
-                const { app } = window.__TAURI__.core;
-                await app.relaunch();
-                await app.exit(0);
-            } catch (finalError) {
-                console.error('All restart methods failed:', finalError);
-                alert(_('alert.autoRestartFailed'));
-            }
+        } catch (finalError) {
+            console.error('All restart methods failed:', finalError);
+            alert(_('alert.autoRestartFailed'));
         }
     }
 }
@@ -318,7 +434,13 @@ async function confirmCustomReplace() {
         return;
     }
 
-    if (!confirm(_('confirm.backupBeforeReplace'))) {
+    const confirmed = await showConfirmDialog(
+        _('confirm.title'),
+        _('confirm.backupBeforeReplace'),
+        _('button.confirm'),
+        _('button.cancel')
+    );
+    if (!confirmed) {
         return;
     }
 
@@ -464,7 +586,13 @@ async function confirmRandomGenerate() {
         return;
     }
 
-    if (!confirm(_('confirm.backupBeforeReplace'))) {
+    const confirmed = await showConfirmDialog(
+        _('confirm.title'),
+        _('confirm.backupBeforeReplace'),
+        _('button.confirm'),
+        _('button.cancel')
+    );
+    if (!confirmed) {
         return;
     }
 
@@ -785,7 +913,13 @@ async function copyToClipboard(text) {
 }
 
 async function deleteBackup(id) {
-    if (!confirm(_('confirm.deleteBackup'))) return;
+    const confirmed = await showConfirmDialog(
+        _('confirm.title'),
+        _('confirm.deleteBackup'),
+        _('button.confirm'),
+        _('button.cancel')
+    );
+    if (!confirmed) return;
     
     const statusElement = document.getElementById('operation-status');
     
@@ -814,7 +948,13 @@ async function deleteBackup(id) {
 async function restoreBackup(id, guid) {
     const statusElement = document.getElementById('operation-status');
 
-    if (!confirm(_('confirm.backupBeforeRestore'))) {
+    const confirmed = await showConfirmDialog(
+        _('confirm.title'),
+        _('confirm.backupBeforeRestore'),
+        _('button.confirm'),
+        _('button.cancel')
+    );
+    if (!confirmed) {
         return;
     }
 

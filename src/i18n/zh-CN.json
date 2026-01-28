@@ -57,6 +57,7 @@
   "backup.restoreTitle": "恢复此机器码",
   "backup.deleteTitle": "删除备份",
 
+  "confirm.title": "确认操作",
   "confirm.backupBeforeReplace": "此操作将自动备份当前机器码！",
   "confirm.backupBeforeRestore": "此操作将自动备份当前机器码再执行恢复！",
   "confirm.deleteBackup": "确定要删除此备份吗？",
