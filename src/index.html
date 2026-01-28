@@ -59,8 +59,8 @@
             <p class="modal-warning" data-i18n="modal.warning">⚠️ 替换前将自动备份当前机器码</p>
             <div class="form-group">
                 <label for="custom-guid-input" data-i18n="modal.inputGuidLabel">新的 MachineGuid</label>
-                <input type="text" id="custom-guid-input" placeholder="550E8400-E29B-41D4-A716-446655440000" maxlength="36">
-                <p class="input-hint" data-i18n="modal.inputHint">格式: 550E8400-E29B-41D4-A716-446655440000</p>
+                <input type="text" id="custom-guid-input" placeholder="550E8400-E29B-41D4-A716-4466554400000" maxlength="36">
+                <p class="input-hint" data-i18n="modal.inputHint">格式: 550E8400-E29B-41D4-A716-4466554400000</p>
             </div>
             <div class="form-group">
                 <label for="custom-description-input" data-i18n="modal.descriptionLabel">描述 (可选)</label>
@@ -101,6 +101,17 @@
             <div class="modal-actions">
                 <button id="confirm-dialog-cancel" class="cancel-btn" data-i18n="button.cancel">取消</button>
                 <button id="confirm-dialog-confirm" class="danger-btn" data-i18n="button.confirm">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统一提示对话框 -->
+    <div id="alert-dialog-modal" class="modal confirm-modal">
+        <div class="modal-content">
+            <h2 id="alert-dialog-title" data-i18n="alert.title">提示</h2>
+            <p id="alert-dialog-message">这是一条提示信息</p>
+            <div class="modal-actions">
+                <button id="alert-dialog-confirm" class="confirm-btn" data-i18n="button.ok">确定</button>
             </div>
         </div>
     </div>
