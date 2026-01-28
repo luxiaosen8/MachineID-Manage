@@ -1,21 +1,23 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MachineID-Manage",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "identifier": "com.machineid.manage",
   "build": {
     "devUrl": "http://localhost:1420",
-    "frontendDist": "../src"
+    "frontendDist": "../dist",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
         "title": "MachineID-Manage",
-        "width": 800,
-        "height": 600,
-        "minWidth": 600,
-        "minHeight": 400,
+        "width": 900,
+        "height": 700,
+        "minWidth": 700,
+        "minHeight": 500,
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
@@ -26,7 +28,8 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": ["default"]
     }
   },
   "bundle": {
@@ -49,6 +52,18 @@
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
       }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "dialog": {
+      "open": true,
+      "save": true
+    },
+    "clipboard": {
+      "writeText": true
     }
   }
 }

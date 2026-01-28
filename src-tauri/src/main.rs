@@ -8,6 +8,7 @@ use crate::machine_id::{
     generate_random_machine_guid, read_machine_guid, restore_backup_by_id, test_registry_write_access,
     write_machine_guid, MachineIdBackup, RestoreInfo, WriteResult,
 };
+use tracing::{info, warn};
 
 mod machine_id;
 
@@ -37,6 +38,7 @@ struct BackupListResponse {
 
 #[tauri::command]
 fn read_machine_id() -> Result<MachineIdResponse, String> {
+    info!("读取机器码");
     match read_machine_guid() {
         Ok(machine_id) => Ok(MachineIdResponse {
             success: true,
@@ -44,35 +46,43 @@ fn read_machine_id() -> Result<MachineIdResponse, String> {
             source: machine_id.source,
             error: None,
         }),
-        Err(e) => Ok(MachineIdResponse {
-            success: false,
-            guid: String::new(),
-            source: String::new(),
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("读取机器码失败: {}", e);
+            Ok(MachineIdResponse {
+                success: false,
+                guid: String::new(),
+                source: String::new(),
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
 #[tauri::command]
 fn backup_machine_guid(description: Option<String>) -> Result<BackupResponse, String> {
+    info!("备份机器码");
     match backup_current_machine_guid(description) {
         Ok(backup) => Ok(BackupResponse {
             success: true,
             backup,
-            skipped: false,
+            skipped: backup.is_none(),
             error: None,
         }),
-        Err(e) => Ok(BackupResponse {
-            success: false,
-            backup: None,
-            skipped: false,
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("备份机器码失败: {}", e);
+            Ok(BackupResponse {
+                success: false,
+                backup: None,
+                skipped: false,
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
 #[tauri::command]
 fn list_backups() -> Result<BackupListResponse, String> {
+    info!("获取备份列表");
     match machine_id_list_backups() {
         Ok(backups) => Ok(BackupListResponse {
             success: true,
@@ -80,17 +90,21 @@ fn list_backups() -> Result<BackupListResponse, String> {
             count: backups.len(),
             error: None,
         }),
-        Err(e) => Ok(BackupListResponse {
-            success: false,
-            backups: Vec::new(),
-            count: 0,
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("获取备份列表失败: {}", e);
+            Ok(BackupListResponse {
+                success: false,
+                backups: Vec::new(),
+                count: 0,
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
 #[tauri::command]
 fn delete_backup_by_id(id: String) -> Result<BackupResponse, String> {
+    info!("删除备份: {}", id);
     match delete_backup(&id) {
         Ok(_) => Ok(BackupResponse {
             success: true,
@@ -98,17 +112,21 @@ fn delete_backup_by_id(id: String) -> Result<BackupResponse, String> {
             skipped: false,
             error: None,
         }),
-        Err(e) => Ok(BackupResponse {
-            success: false,
-            backup: None,
-            skipped: false,
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("删除备份失败: {}", e);
+            Ok(BackupResponse {
+                success: false,
+                backup: None,
+                skipped: false,
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
 #[tauri::command]
 fn clear_all_backups() -> Result<BackupResponse, String> {
+    info!("清空所有备份");
     match machine_id_clear_all_backups() {
         Ok(_) => Ok(BackupResponse {
             success: true,
@@ -116,13 +134,23 @@ fn clear_all_backups() -> Result<BackupResponse, String> {
             skipped: false,
             error: None,
         }),
-        Err(e) => Ok(BackupResponse {
-            success: false,
-            backup: None,
-            skipped: false,
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("清空备份失败: {}", e);
+            Ok(BackupResponse {
+                success: false,
+                backup: None,
+                skipped: false,
+                error: Some(e.to_string()),
+            })
+        }
     }
+}
+
+#[derive(serde::Serialize)]
+struct BackupCountResponse {
+    success: bool,
+    count: usize,
+    error: Option<String>,
 }
 
 #[tauri::command]
@@ -142,13 +170,6 @@ fn get_backup_count() -> Result<BackupCountResponse, String> {
 }
 
 #[derive(serde::Serialize)]
-struct BackupCountResponse {
-    success: bool,
-    count: usize,
-    error: Option<String>,
-}
-
-#[derive(serde::Serialize)]
 struct WriteGuidResponse {
     success: bool,
     previous_guid: String,
@@ -164,6 +185,7 @@ fn write_machine_guid_command(
     new_guid: String,
     description: Option<String>,
 ) -> Result<WriteGuidResponse, String> {
+    info!("写入机器码: {}", new_guid);
     match write_machine_guid(&new_guid, description) {
         Ok(WriteResult {
             previous_guid,
@@ -179,15 +201,18 @@ fn write_machine_guid_command(
             message: format!("成功将 MachineGuid 替换为: {}", current_guid),
             error: None,
         }),
-        Err(e) => Ok(WriteGuidResponse {
-            success: false,
-            previous_guid: String::new(),
-            new_guid: String::new(),
-            pre_backup: None,
-            post_backup: None,
-            message: String::new(),
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("写入机器码失败: {}", e);
+            Ok(WriteGuidResponse {
+                success: false,
+                previous_guid: String::new(),
+                new_guid: String::new(),
+                pre_backup: None,
+                post_backup: None,
+                message: String::new(),
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
@@ -215,6 +240,7 @@ struct RestoreBackupResponse {
 
 #[tauri::command]
 fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, String> {
+    info!("恢复备份: {}", id);
     match restore_backup_by_id(&id) {
         Ok(RestoreInfo {
             previous_guid,
@@ -230,15 +256,18 @@ fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, Str
             message: format!("恢复成功: {}", restored_guid),
             error: None,
         }),
-        Err(e) => Ok(RestoreBackupResponse {
-            success: false,
-            previous_guid: String::new(),
-            restored_guid: String::new(),
-            pre_backup: None,
-            restored_from: None,
-            message: String::new(),
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("恢复备份失败: {}", e);
+            Ok(RestoreBackupResponse {
+                success: false,
+                previous_guid: String::new(),
+                restored_guid: String::new(),
+                pre_backup: None,
+                restored_from: None,
+                message: String::new(),
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
@@ -246,6 +275,7 @@ fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, Str
 fn generate_random_guid_command(
     description: Option<String>,
 ) -> Result<GenerateRandomGuidResponse, String> {
+    info!("生成随机机器码");
     match generate_random_machine_guid(description) {
         Ok(WriteResult {
             previous_guid,
@@ -261,21 +291,24 @@ fn generate_random_guid_command(
             message: format!("成功生成并替换 MachineGuid: {}", current_guid),
             error: None,
         }),
-        Err(e) => Ok(GenerateRandomGuidResponse {
-            success: false,
-            previous_guid: String::new(),
-            new_guid: String::new(),
-            pre_backup: None,
-            post_backup: None,
-            message: String::new(),
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            warn!("生成随机机器码失败: {}", e);
+            Ok(GenerateRandomGuidResponse {
+                success: false,
+                previous_guid: String::new(),
+                new_guid: String::new(),
+                pre_backup: None,
+                post_backup: None,
+                message: String::new(),
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {}! This is MachineID-Manage.", name)
+    format!("Hello, {}! This is MachineID-Manage v2.0.", name)
 }
 
 #[derive(serde::Serialize)]
@@ -288,6 +321,7 @@ struct PermissionCheckResponse {
 #[tauri::command]
 fn check_permission_command() -> Result<PermissionCheckResponse, String> {
     let has_permission = check_admin_permissions();
+    info!("权限检查: {}", has_permission);
     Ok(PermissionCheckResponse {
         success: true,
         has_permission,
@@ -312,7 +346,17 @@ fn test_write_access_command() -> Result<PermissionCheckResponse, String> {
 }
 
 fn main() {
+    // 初始化日志
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
+    info!("MachineID-Manage v2.0 启动");
+
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             read_machine_id,

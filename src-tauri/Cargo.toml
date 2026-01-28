@@ -8,25 +8,35 @@ repository.workspace = true
 license.workspace = true
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = ["api-all"] }
+tauri = { version = "2.0", features = ["tray-icon"] }
+tauri-plugin-shell = "2.0"
+tauri-plugin-dialog = "2.0"
+tauri-plugin-clipboard-manager = "2.0"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 regex = "1.10"
 rand = "0.8"
+tokio = { version = "1.35", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+config = "0.14"
+specta = "1.0"
+tauri-specta = { version = "2.0", features = ["derive", "typescript"] }
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.50"
+winreg = "0.52"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
 [dev-dependencies]
 tempfile = "3"
+tokio-test = "0.4"
 
 [features]
 default = ["custom-protocol"]
