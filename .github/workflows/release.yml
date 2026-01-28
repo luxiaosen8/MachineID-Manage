@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v1.4.0)'
+        description: 'Version tag (e.g., v2.0.0)'
         required: true
-        default: 'v1.4.0'
+        default: 'v2.0.0'
 
 permissions:
   contents: write
@@ -35,7 +35,8 @@ jobs:
       - name: Install dependencies
         run: |
           rustup default stable
-          cargo install tauri-cli --locked --version "^1.5"
+          npm install
+          cargo install tauri-cli --locked
 
       - name: Build with Tauri
         shell: pwsh
@@ -48,11 +49,24 @@ jobs:
             exit 1
           }
 
+      - name: Create Portable Version
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.version || github.ref_name }}"
+          $version = $version -replace '^v', ''
+          $portableDir = "MachineID-Manage_${version}_windows_portable"
+          New-Item -ItemType Directory -Force -Path $portableDir
+          Copy-Item "src-tauri/target/release/machineid-manage.exe" $portableDir/
+          Copy-Item "src-tauri/icons" $portableDir/ -Recurse
+          Compress-Archive -Path $portableDir -DestinationPath "${portableDir}.zip" -Force
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
-          path: src-tauri/target/release/bundle/
+          path: |
+            src-tauri/target/release/bundle/
+            MachineID-Manage_*_windows_portable.zip
           retention-days: 30
 
   # macOS Build
@@ -75,7 +89,8 @@ jobs:
       - name: Install dependencies
         run: |
           rustup default stable
-          cargo install tauri-cli --locked --version "^1.5"
+          npm install
+          cargo install tauri-cli --locked
 
       - name: Build with Tauri
         env:
@@ -83,11 +98,23 @@ jobs:
         run: |
           cargo tauri build --verbose
 
+      - name: Create Portable Version
+        run: |
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          VERSION=${VERSION#v}
+          PORTABLE_DIR="MachineID-Manage_${VERSION}_macos_portable"
+          mkdir -p "$PORTABLE_DIR"
+          cp "src-tauri/target/release/machineid-manage" "$PORTABLE_DIR/"
+          cp -r "src-tauri/icons" "$PORTABLE_DIR/"
+          zip -r "${PORTABLE_DIR}.zip" "$PORTABLE_DIR"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-release
-          path: src-tauri/target/release/bundle/
+          path: |
+            src-tauri/target/release/bundle/
+            MachineID-Manage_*_macos_portable.zip
           retention-days: 30
 
   # Linux Build
@@ -108,7 +135,8 @@ jobs:
       - name: Install dependencies
         run: |
           rustup default stable
-          cargo install tauri-cli --locked --version "^1.5"
+          npm install
+          cargo install tauri-cli --locked
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
 
@@ -118,9 +146,142 @@ jobs:
         run: |
           cargo tauri build --verbose
 
+      - name: Create Portable Version
+        run: |
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          VERSION=${VERSION#v}
+          PORTABLE_DIR="MachineID-Manage_${VERSION}_linux_portable"
+          mkdir -p "$PORTABLE_DIR"
+          cp "src-tauri/target/release/machineid-manage" "$PORTABLE_DIR/"
+          cp -r "src-tauri/icons" "$PORTABLE_DIR/"
+          tar -czf "${PORTABLE_DIR}.tar.gz" "$PORTABLE_DIR"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-release
-          path: src-tauri/target/release/bundle/
+          path: |
+            src-tauri/target/release/bundle/
+            MachineID-Manage_*_linux_portable.tar.gz
           retention-days: 30
+
+  # Create Release
+  create-release:
+    needs: [release-windows, release-macos, release-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
+          body: |
+            ## 🎉 MachineID-Manage v2.0.0 正式发布
+
+            ### ✨ 全新重构版本
+            - 前端全面升级为 **Vue 3 + TypeScript**
+            - 使用 **Vite** 构建工具，开发体验大幅提升
+            - **Tailwind CSS** 现代化 UI 设计
+            - **Pinia** 状态管理
+            - Tauri 2.0 最新特性支持
+
+            ### 📦 下载
+
+            #### Windows
+            - 安装版: `.msi` 或 `.exe`
+            - 便携版: `MachineID-Manage_*_windows_portable.zip`
+
+            #### macOS
+            - 安装版: `.dmg`
+            - 便携版: `MachineID-Manage_*_macos_portable.zip`
+
+            #### Linux
+            - 安装版: `.AppImage` 或 `.deb`
+            - 便携版: `MachineID-Manage_*_linux_portable.tar.gz`
+
+            ### 🚀 快速开始
+
+            #### 中文
+            1. **读取机器码** - 应用启动时自动读取当前 MachineGuid
+            2. **备份机器码** - 点击"备份机器码"保存当前机器码
+            3. **随机生成** - 点击"随机生成"创建新的随机 GUID
+            4. **自定义替换** - 输入有效的 GUID 并确认替换
+            5. **恢复备份** - 在备份列表中选择并恢复
+
+            #### English
+            1. **Read Machine ID** - Automatically reads current MachineGuid on app startup
+            2. **Backup Machine ID** - Click "Backup Machine ID" to save current machine code
+            3. **Random Generation** - Click "Random Generate" to create a new random GUID
+            4. **Custom Replacement** - Enter a valid GUID and confirm replacement
+            5. **Restore Backup** - Select and restore from the backup list
+
+            ### ⚠️ 注意事项 / Notes
+
+            #### 中文
+            - 修改 Windows 注册表需要**管理员权限**
+            - 执行任何操作前请务必备份您的数据
+            - 建议在测试环境验证后再用于生产环境
+            - 本工具仅适用于 Windows 系统
+
+            #### English
+            - **Administrator privileges** required for modifying Windows registry
+            - Always backup your data before performing any operations
+            - Recommended to test in a test environment before production use
+            - This tool is designed for Windows systems only
+
+            ### 🛡️ 安全特性 / Security Features
+
+            #### 中文
+            - ✅ 权限检测 - 写入操作前检测管理员权限
+            - ✅ 自动备份 - 修改前自动备份
+            - ✅ 用户确认 - 危险操作需要用户确认
+            - ✅ 操作日志 - 记录所有注册表修改操作
+            - ✅ 输入验证 - 写入前验证 GUID 格式
+
+            #### English
+            - ✅ Permission Detection - Checks admin rights before write operations
+            - ✅ Auto Backup - Automatically backs up before modifications
+            - ✅ User Confirmation - Dangerous operations require user confirmation
+            - ✅ Operation Logging - Records all registry modification operations
+            - ✅ Input Validation - Validates GUID format before writing
+
+            ### 📋 更新状态 / Update Status
+
+            #### 中文
+            - **版本**: v2.0.0
+            - **发布日期**: 2026-01-29
+            - **状态**: 稳定版本
+            - **兼容性**: Windows 10/11
+
+            #### English
+            - **Version**: v2.0.0
+            - **Release Date**: 2026-01-29
+            - **Status**: Stable Release
+            - **Compatibility**: Windows 10/11
+
+            ### 🔧 技术栈 / Tech Stack
+            - **Backend**: Rust + Tauri 2
+            - **Frontend**: Vue 3 + TypeScript
+            - **Build Tool**: Vite
+            - **State Management**: Pinia
+            - **Styling**: Tailwind CSS
+
+            ---
+            **感谢使用 MachineID-Manage! / Thank you for using MachineID-Manage!**
+          files: |
+            artifacts/windows-release/**/**
+            artifacts/macos-release/**/**
+            artifacts/linux-release/**/**
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
