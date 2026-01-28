@@ -18,3 +18,4 @@ anyhow = "1.0"
 
 [patch.crates-io]
 time = { git = "https://github.com/time-rs/time", rev = "14da652cc731cbe86afbc5b99442f3a0cd747e60" }
+cookie = { git = "https://github.com/rwf2/cookie-rs", branch = "master" }
