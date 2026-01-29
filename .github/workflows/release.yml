@@ -137,6 +137,45 @@ jobs:
           npm install
           cargo install tauri-cli --locked
 
+      # 数据脱敏：清理敏感数据
+      - name: Sanitize sensitive data
+        shell: pwsh
+        run: |
+          Write-Host "开始数据脱敏清理..." -ForegroundColor Cyan
+
+          # 删除敏感文件
+          $sensitiveFiles = @(
+            "src-tauri/backups.json",
+            "src-tauri/test-data.json",
+            "src-tauri/debug.log"
+          )
+
+          foreach ($file in $sensitiveFiles) {
+            if (Test-Path $file) {
+              Write-Host "删除敏感文件: $file" -ForegroundColor Yellow
+              Remove-Item -Path $file -Force
+            }
+          }
+
+          # 清空 backups.json 如果存在
+          if (Test-Path "src-tauri/backups.json") {
+            Write-Host "清空 backups.json" -ForegroundColor Yellow
+            @{ backups = @() } | ConvertTo-Json -Depth 10 | Set-Content -Path "src-tauri/backups.json" -Force
+          }
+
+          # 验证清理结果
+          $remainingFiles = Get-ChildItem -Path "src-tauri" -Filter "*.json" -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "backups.json" }
+          if ($remainingFiles) {
+            $content = Get-Content $remainingFiles.FullName -Raw | ConvertFrom-Json
+            if ($content.backups -and $content.backups.Count -gt 0) {
+              Write-Error "警告: backups.json 仍包含 $($content.backups.Count) 个备份记录"
+            } else {
+              Write-Host "✅ backups.json 已清空" -ForegroundColor Green
+            }
+          }
+
+          Write-Host "数据脱敏清理完成" -ForegroundColor Green
+
       - name: Build with Tauri
         shell: pwsh
         env:
