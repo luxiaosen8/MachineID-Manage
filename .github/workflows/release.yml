@@ -180,24 +180,30 @@ jobs:
           tag_name: ${{ github.event.inputs.version || github.ref_name }}
           name: MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
           body: |
-            ## 🎉 MachineID-Manage v2.0.0 正式发布
+            ## 🎉 MachineID-Manage v2.1.0 正式发布
 
-            ### ✨ 全新重构版本
+            ### 🔧 重要修复
+            - 修复 UAC 权限提升问题 - 使用原生 Windows API `ShellExecuteW` 替代 PowerShell
+            - 改进错误处理 - 添加详细的错误代码和用户友好的错误消息
+            - 提升稳定性 - 管理员重启功能现在可以正常工作
+
+            ### ✨ v2.0 全新重构版本特性
             - 前端全面升级为 **Vue 3 + TypeScript**
             - 使用 **Vite** 构建工具，开发体验大幅提升
             - **Tailwind CSS** 现代化 UI 设计
             - **Pinia** 状态管理
             - Tauri 2.0 最新特性支持
 
-            ### 📦 下载
+            ### 📦 下载 / Downloads
 
-            #### Windows
-            - 安装版: `.msi` 或 `.exe`
-            - 便携版: `MachineID-Manage_*_windows_portable.zip`
+            | 平台 | 安装版 | 便携版 |
+            |------|--------|--------|
+            | Windows x64 | `MachineID-Manage_2.1.0_x64-setup.exe` | `MachineID-Manage_2.1.0_windows_portable.zip` |
+            | Windows MSI | `MachineID-Manage_2.1.0_x64_en-US.msi` | - |
 
-            > **注意**: 本工具专为 Windows 系统设计，仅支持 Windows 10/11 平台
+            > **注意 / Note**: 本工具专为 Windows 系统设计，仅支持 Windows 10/11 平台
 
-            ### 🚀 快速开始
+            ### 🚀 快速开始 / Quick Start
 
             #### 中文
             1. **读取机器码** - 应用启动时自动读取当前 MachineGuid
@@ -220,12 +226,14 @@ jobs:
             - 执行任何操作前请务必备份您的数据
             - 建议在测试环境验证后再用于生产环境
             - 本工具仅适用于 Windows 系统
+            - **v2.1.0 修复**: 管理员权限申请现在可以正常工作
 
             #### English
             - **Administrator privileges** required for modifying Windows registry
             - Always backup your data before performing any operations
             - Recommended to test in a test environment before production use
             - This tool is designed for Windows systems only
+            - **v2.1.0 Fix**: Admin privilege request now works correctly
 
             ### 🛡️ 安全特性 / Security Features
 
@@ -246,16 +254,18 @@ jobs:
             ### 📋 更新状态 / Update Status
 
             #### 中文
-            - **版本**: v2.0.0
+            - **版本**: v2.1.0
             - **发布日期**: 2026-01-29
             - **状态**: 稳定版本
             - **兼容性**: Windows 10/11
+            - **主要更新**: 修复 UAC 提权问题
 
             #### English
-            - **Version**: v2.0.0
+            - **Version**: v2.1.0
             - **Release Date**: 2026-01-29
             - **Status**: Stable Release
             - **Compatibility**: Windows 10/11
+            - **Major Update**: Fixed UAC elevation issue
 
             ### 🔧 技术栈 / Tech Stack
             - **Backend**: Rust + Tauri 2
@@ -263,6 +273,7 @@ jobs:
             - **Build Tool**: Vite
             - **State Management**: Pinia
             - **Styling**: Tailwind CSS
+            - **Windows API**: ShellExecuteW for UAC elevation
 
             ---
             **感谢使用 MachineID-Manage! / Thank you for using MachineID-Manage!**
