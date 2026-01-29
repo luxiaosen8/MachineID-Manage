@@ -45,7 +45,7 @@ jobs:
 
       - name: Rust Clippy Check
         run: |
-          cd src-tauri && cargo clippy -- -D warnings
+          cd src-tauri && cargo clippy --all-targets --all-features -- -D warnings
 
       - name: TypeScript Lint
         run: |
