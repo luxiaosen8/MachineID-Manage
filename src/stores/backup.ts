@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import type { BackupItem, OperationResult, RestoreResult } from '@types';
+import type { BackupItem, OperationResult, RestoreResult } from '../types/index';
 
 /**
  * 备份状态管理

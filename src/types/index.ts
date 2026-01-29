@@ -2,6 +2,10 @@
  * MachineID-Manage 类型定义
  */
 
+// 弹窗类型
+export type AlertType = 'info' | 'success' | 'error' | 'warning' | 'permission';
+export type ConfirmType = 'confirm' | 'delete' | 'restore' | 'permission' | 'restart' | 'warning';
+
 // 机器码信息
 export interface MachineIdInfo {
   guid: string;
@@ -45,7 +49,11 @@ export interface RestoreResult {
 // 权限检查结果
 export interface PermissionCheckResult {
   hasPermission: boolean;
-  error?: string;
+  checkSuccess: boolean;
+  method: string;
+  errorType: string | null;
+  errorMessage: string | null;
+  debugInfo: string | null;
 }
 
 // 应用状态
@@ -65,6 +73,7 @@ export interface DialogConfig {
   confirmText?: string;
   cancelText?: string;
   variant?: 'default' | 'destructive';
+  type?: AlertType | ConfirmType;
 }
 
 // 生成选项

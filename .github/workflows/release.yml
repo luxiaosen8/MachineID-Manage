@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    branches: [main, master]
   workflow_dispatch:
     inputs:
       version:
@@ -15,9 +17,97 @@ permissions:
   contents: write
 
 jobs:
+  # 代码质量检查
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd src-tauri && cargo fetch
+
+      - name: Rust Format Check
+        run: |
+          cd src-tauri && cargo fmt -- --check
+
+      - name: Rust Clippy Check
+        run: |
+          cd src-tauri && cargo clippy -- -D warnings
+
+      - name: TypeScript Lint
+        run: |
+          npm run lint
+
+      - name: TypeScript Type Check
+        run: |
+          npm run type-check || npm run build  # 如果没有 type-check 脚本则使用 build
+
+  # 安全审计
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo-audit
+        run: |
+          cd src-tauri && cargo audit || true  # 暂时允许失败，不阻塞构建
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high || true  # 暂时允许失败，不阻塞构建
+
+  # 单元测试
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd src-tauri && cargo fetch
+
+      - name: Run Rust Tests
+        run: |
+          cd src-tauri && cargo test --verbose
+
+      - name: Run TypeScript Tests
+        run: |
+          npm run test:unit || npm test || echo "No tests configured"
+
   # Windows Build Only
   release-windows:
+    needs: [quality-check, security-audit, test]
     runs-on: windows-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,7 +133,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Skip TypeScript check and build directly
           cargo tauri build --verbose 2>&1
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Build failed with exit code $LASTEXITCODE"

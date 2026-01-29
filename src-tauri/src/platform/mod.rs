@@ -1,4 +1,3 @@
-pub mod machine_id;
 pub mod permissions;
 
 #[cfg(target_os = "windows")]

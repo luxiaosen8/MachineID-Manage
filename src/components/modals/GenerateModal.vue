@@ -12,8 +12,17 @@
             class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full shadow-2xl"
             @click.stop
           >
+            <!-- 头部 -->
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-white">随机生成 MachineGuid</h3>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <Sparkles class="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white">随机生成 MachineGuid</h3>
+                  <p class="text-sm text-slate-400">生成全新的随机机器码</p>
+                </div>
+              </div>
               <button
                 class="text-slate-400 hover:text-white transition-colors"
                 @click="close"
@@ -22,6 +31,7 @@
               </button>
             </div>
 
+            <!-- 警告提示 -->
             <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
               <p class="text-sm text-amber-400 flex items-center gap-2">
                 <AlertTriangle class="w-4 h-4" />
@@ -30,6 +40,7 @@
             </div>
 
             <div class="space-y-4">
+              <!-- 生成的 GUID -->
               <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">
                   新生成的 MachineGuid
@@ -38,12 +49,13 @@
                   <code class="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-purple-400 font-mono">
                     {{ generatedGuid }}
                   </code>
-                  <Button variant="outline" size="icon" @click="regenerate">
+                  <Button variant="outline" size="icon" @click="regenerate" title="重新生成">
                     <RefreshCw class="w-4 h-4" />
                   </Button>
                 </div>
               </div>
 
+              <!-- 描述输入 -->
               <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">
                   描述 (可选)
@@ -57,6 +69,7 @@
               </div>
             </div>
 
+            <!-- 按钮 -->
             <div class="flex justify-end gap-3 mt-6">
               <Button variant="outline" @click="close">
                 取消
@@ -79,7 +92,8 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { X, AlertTriangle, RefreshCw } from 'lucide-vue-next';
+import { storeToRefs } from 'pinia';
+import { X, AlertTriangle, RefreshCw, Sparkles } from 'lucide-vue-next';
 import { useDialogStore, useMachineIdStore } from '@stores';
 import { generateGuid } from '@utils';
 import Button from '@components/ui/Button.vue';
@@ -87,8 +101,8 @@ import Button from '@components/ui/Button.vue';
 const dialogStore = useDialogStore();
 const machineIdStore = useMachineIdStore();
 
-const { generateModalVisible } = dialogStore;
-const { isLoading } = machineIdStore;
+const { generateModalVisible } = storeToRefs(dialogStore);
+const { isLoading } = storeToRefs(machineIdStore);
 
 const generatedGuid = ref(generateGuid());
 const description = ref('');
@@ -116,6 +130,7 @@ async function handleGenerate() {
     confirmText: '确认替换',
     cancelText: '取消',
     variant: 'destructive',
+    type: 'warning',
   });
 
   if (confirmed) {
@@ -123,15 +138,9 @@ async function handleGenerate() {
 
     if (result.success) {
       close();
-      await dialogStore.showAlert({
-        title: '生成成功',
-        message: result.message || '新的机器码已生成并替换',
-      });
+      await dialogStore.showSuccess('生成成功', result.message || '新的机器码已生成并替换');
     } else {
-      await dialogStore.showAlert({
-        title: '生成失败',
-        message: result.error || '生成过程中发生错误',
-      });
+      await dialogStore.showError('生成失败', result.error || '生成过程中发生错误');
     }
   }
 }

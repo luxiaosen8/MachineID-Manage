@@ -12,8 +12,17 @@
             class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full shadow-2xl"
             @click.stop
           >
+            <!-- 头部 -->
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-white">自定义替换 MachineGuid</h3>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <Edit3 class="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white">自定义替换 MachineGuid</h3>
+                  <p class="text-sm text-slate-400">使用指定的 GUID 替换当前机器码</p>
+                </div>
+              </div>
               <button
                 class="text-slate-400 hover:text-white transition-colors"
                 @click="close"
@@ -22,6 +31,7 @@
               </button>
             </div>
 
+            <!-- 警告提示 -->
             <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
               <p class="text-sm text-amber-400 flex items-center gap-2">
                 <AlertTriangle class="w-4 h-4" />
@@ -30,6 +40,7 @@
             </div>
 
             <div class="space-y-4">
+              <!-- GUID 输入 -->
               <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">
                   新的 MachineGuid
@@ -50,6 +61,7 @@
                 </p>
               </div>
 
+              <!-- 描述输入 -->
               <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">
                   描述 (可选)
@@ -63,6 +75,7 @@
               </div>
             </div>
 
+            <!-- 按钮 -->
             <div class="flex justify-end gap-3 mt-6">
               <Button variant="outline" @click="close">
                 取消
@@ -85,7 +98,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { X, AlertTriangle } from 'lucide-vue-next';
+import { X, AlertTriangle, Edit3 } from 'lucide-vue-next';
 import { useDialogStore, useMachineIdStore } from '@stores';
 import { isValidGuid } from '@utils';
 import Button from '@components/ui/Button.vue';
@@ -116,6 +129,7 @@ async function handleReplace() {
     confirmText: '确认替换',
     cancelText: '取消',
     variant: 'destructive',
+    type: 'warning',
   });
 
   if (confirmed) {
@@ -126,15 +140,9 @@ async function handleReplace() {
 
     if (result.success) {
       close();
-      await dialogStore.showAlert({
-        title: '替换成功',
-        message: result.message || '机器码已成功替换',
-      });
+      await dialogStore.showSuccess('替换成功', result.message || '机器码已成功替换');
     } else {
-      await dialogStore.showAlert({
-        title: '替换失败',
-        message: result.error || '替换过程中发生错误',
-      });
+      await dialogStore.showError('替换失败', result.error || '替换过程中发生错误');
     }
   }
 }

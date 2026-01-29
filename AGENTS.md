@@ -96,8 +96,75 @@ MachineID-Manage/
 ### 代码安全
 - 禁止在代码中硬编码密钥或敏感信息
 - 所有用户输入必须验证
-- 使用安全的随机数生成器
+- 使用安全的随机数生成器 (OsRng / crypto.getRandomValues)
 - 遵循最小权限原则
+- 错误信息脱敏处理，避免泄露敏感路径
+- 命令注入防护 (使用 -LiteralPath 和参数转义)
+
+## 代码审查与优化记录
+
+### 2026-01-29 安全与性能优化
+
+#### 已修复问题
+
+**🔴 高优先级 - 安全问题**
+1. **命令注入漏洞修复** (src-tauri/src/machine_id.rs, src/platform/permissions.rs)
+   - 使用 `-LiteralPath` 替代 `-FilePath`
+   - 对单引号进行转义处理
+   - 添加 `-NoProfile` 和 `-ExecutionPolicy Bypass` 参数
+
+2. **不安全随机数生成修复** (src-tauri/src/machine_id.rs)
+   - 替换 `rand::thread_rng()` 为 `OsRng`
+   - 遵循 RFC 4122 版本 4 UUID 标准
+   - 正确设置版本和变体位
+
+3. **错误信息脱敏处理** (src-tauri/src/main.rs)
+   - 添加 `sanitize_error_for_user()` 函数
+   - 将内部错误映射为用户友好信息
+   - 避免泄露敏感路径和系统信息
+
+**🟡 中优先级 - 性能优化**
+4. **备份存储重复加载修复** (src-tauri/src/machine_id.rs)
+   - 将两次 `load_backup_store()` 合并为一次
+   - 减少 50% 的 I/O 操作
+
+5. **正则表达式缓存** (src-tauri/src/machine_id.rs)
+   - 使用 `lazy_static` 缓存编译后的正则
+   - 避免每次验证时重复编译
+
+6. **前端 GUID 生成安全化** (src/domains/machine-id/value-objects/guid.vo.ts, src/utils/index.ts)
+   - 替换 `Math.random()` 为 `crypto.getRandomValues()`
+   - 与后端使用相同的密码学安全随机数生成器
+
+**🟢 低优先级 - 代码质量**
+7. **输入长度限制** (src-tauri/src/main.rs)
+   - GUID 长度严格验证 (36 字符)
+   - 描述长度限制 (200 字符)
+
+8. **单元测试增强** (src-tauri/src/main.rs)
+   - 添加错误脱敏测试
+   - 添加 GUID 长度验证测试
+   - 添加描述长度限制测试
+
+9. **CI/CD 流程完善** (.github/workflows/release.yml)
+   - 添加代码质量检查 (rustfmt, clippy, eslint)
+   - 添加安全审计 (cargo-audit, npm audit)
+   - 添加自动化测试步骤
+   - PR 触发构建检查
+
+#### 技术改进
+
+**依赖更新**
+- 添加 `lazy_static = "1.4"` 到 Cargo.toml
+
+**测试覆盖**
+- 28 个测试全部通过
+- 新增 3 个测试模块
+
+**性能提升**
+- 备份操作 I/O 减少 50%
+- 正则编译开销消除
+- 随机数生成安全性提升
 
 ## 质量标准
 

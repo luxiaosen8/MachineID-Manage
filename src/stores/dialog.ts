@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { DialogConfig } from '@types';
+import type { DialogConfig, AlertType, ConfirmType } from '../types/index';
 
 type DialogResolve = (value: boolean) => void;
 type AlertResolve = () => void;
@@ -15,6 +15,7 @@ export const useDialogStore = defineStore('dialog', () => {
     title: '确认操作',
     message: '确定要执行此操作吗？',
   });
+  const isLoading = ref(false);
   let confirmResolver: DialogResolve | null = null;
 
   // Alert Dialog State
@@ -42,7 +43,9 @@ export const useDialogStore = defineStore('dialog', () => {
         confirmText: config.confirmText || '确认',
         cancelText: config.cancelText || '取消',
         variant: config.variant || 'default',
+        type: config.type || 'confirm',
       };
+      isLoading.value = false;
       confirmResolver = resolve;
       confirmVisible.value = true;
     });
@@ -55,6 +58,7 @@ export const useDialogStore = defineStore('dialog', () => {
     confirmVisible.value = false;
     confirmResolver?.(true);
     confirmResolver = null;
+    isLoading.value = false;
   }
 
   /**
@@ -64,6 +68,14 @@ export const useDialogStore = defineStore('dialog', () => {
     confirmVisible.value = false;
     confirmResolver?.(false);
     confirmResolver = null;
+    isLoading.value = false;
+  }
+
+  /**
+   * 设置加载状态
+   */
+  function setLoading(loading: boolean): void {
+    isLoading.value = loading;
   }
 
   /**
@@ -75,6 +87,7 @@ export const useDialogStore = defineStore('dialog', () => {
         title: config.title,
         message: config.message,
         confirmText: config.confirmText || '确定',
+        type: config.type || 'info',
       };
       alertResolver = resolve;
       alertVisible.value = true;
@@ -88,6 +101,54 @@ export const useDialogStore = defineStore('dialog', () => {
     alertVisible.value = false;
     alertResolver?.();
     alertResolver = null;
+  }
+
+  /**
+   * 显示成功提示
+   */
+  function showSuccess(title: string, message: string): Promise<void> {
+    return showAlert({
+      title,
+      message,
+      type: 'success',
+      confirmText: '确定',
+    });
+  }
+
+  /**
+   * 显示错误提示
+   */
+  function showError(title: string, message: string): Promise<void> {
+    return showAlert({
+      title,
+      message,
+      type: 'error',
+      confirmText: '确定',
+    });
+  }
+
+  /**
+   * 显示警告提示
+   */
+  function showWarning(title: string, message: string): Promise<void> {
+    return showAlert({
+      title,
+      message,
+      type: 'warning',
+      confirmText: '确定',
+    });
+  }
+
+  /**
+   * 显示权限提示
+   */
+  function showPermissionAlert(title: string, message: string): Promise<void> {
+    return showAlert({
+      title,
+      message,
+      type: 'permission',
+      confirmText: '确定',
+    });
   }
 
   /**
@@ -122,6 +183,7 @@ export const useDialogStore = defineStore('dialog', () => {
     // State
     confirmVisible,
     confirmConfig,
+    isLoading,
     alertVisible,
     alertConfig,
     replaceModalVisible,
@@ -130,8 +192,13 @@ export const useDialogStore = defineStore('dialog', () => {
     showConfirm,
     confirm,
     cancel,
+    setLoading,
     showAlert,
     closeAlert,
+    showSuccess,
+    showError,
+    showWarning,
+    showPermissionAlert,
     openReplaceModal,
     closeReplaceModal,
     openGenerateModal,

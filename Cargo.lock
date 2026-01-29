@@ -1929,6 +1929,7 @@ version = "2.0.0"
 dependencies = [
  "anyhow",
  "config",
+ "lazy_static",
  "libc",
  "rand 0.8.5",
  "regex",

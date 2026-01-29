@@ -21,6 +21,7 @@ thiserror.workspace = true
 anyhow.workspace = true
 regex = "1.10"
 rand = "0.8"
+lazy_static = "1.4"
 tokio = { version = "1.35", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

@@ -39,6 +39,13 @@ export default defineConfig(async () => ({
       "@utils": resolve(__dirname, "src/utils"),
       "@types": resolve(__dirname, "src/types"),
       "@assets": resolve(__dirname, "src/assets"),
+      // DDD 架构路径别名
+      "@domains": resolve(__dirname, "src/domains"),
+      "@application": resolve(__dirname, "src/application"),
+      "@infrastructure": resolve(__dirname, "src/infrastructure"),
+      "@presentation": resolve(__dirname, "src/presentation"),
+      // 测试路径别名
+      "@tests": resolve(__dirname, "tests"),
     },
   },
 }));

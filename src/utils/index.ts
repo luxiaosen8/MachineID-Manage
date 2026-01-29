@@ -37,13 +37,19 @@ export function formatTimestamp(timestamp: number): string {
 
 /**
  * 生成随机 GUID
+ * 使用 crypto.getRandomValues 生成密码学安全的随机数
+ * 遵循 RFC 4122 版本 4 UUID 标准
  */
 export function generateGuid(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16).toUpperCase();
-  });
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+
+  // 设置版本 (4) 和变体位 (RFC 4122)
+  array[6] = (array[6] & 0x0f) | 0x40; // 版本 4
+  array[8] = (array[8] & 0x3f) | 0x80; // 变体 10
+
+  const hex = Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`.toUpperCase();
 }
 
 /**

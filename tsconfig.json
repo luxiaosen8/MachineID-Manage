@@ -18,12 +18,20 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@stores": ["src/stores/index"],
+      "@stores/*": ["src/stores/*"],
+      "@utils": ["src/utils/index"],
+      "@utils/*": ["src/utils/*"],
+      "@types": ["src/types/index"],
+      "@types/*": ["src/types/*"],
       "@components/*": ["src/components/*"],
       "@views/*": ["src/views/*"],
-      "@stores/*": ["src/stores/*"],
-      "@utils/*": ["src/utils/*"],
-      "@types/*": ["src/types/*"],
-      "@assets/*": ["src/assets/*"]
+      "@assets/*": ["src/assets/*"],
+      "@domains/*": ["src/domains/*"],
+      "@application/*": ["src/application/*"],
+      "@infrastructure/*": ["src/infrastructure/*"],
+      "@presentation/*": ["src/presentation/*"],
+      "@tests/*": ["tests/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],

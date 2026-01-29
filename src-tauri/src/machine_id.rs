@@ -2,11 +2,22 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use lazy_static::lazy_static;
+use rand::rngs::OsRng;
+use rand::RngCore;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 #[cfg(windows)]
 use winreg::enums::*;
 #[cfg(windows)]
 use winreg::RegKey;
+
+lazy_static! {
+    /// GUID 格式正则表达式 - 使用 lazy_static 缓存编译结果
+    static ref GUID_PATTERN: Regex = Regex::new(
+        r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    ).expect("Invalid GUID regex pattern");
+}
 
 /// 获取备份文件路径
 /// 优先使用应用程序数据目录，确保有写入权限
@@ -159,43 +170,7 @@ fn get_registry_path() -> &'static str {
     "SOFTWARE\\Microsoft\\Cryptography"
 }
 
-#[cfg(windows)]
-pub fn check_admin_permissions() -> bool {
-    let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let crypt_path = get_registry_path();
-    hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE | KEY_READ)
-        .is_ok()
-}
-
-#[cfg(target_os = "macos")]
-pub fn check_admin_permissions() -> bool {
-    // 使用标准库检查是否以 root 运行
-    std::process::Command::new("id")
-        .arg("-u")
-        .output()
-        .map(|output| {
-            String::from_utf8_lossy(&output.stdout).trim() == "0"
-        })
-        .unwrap_or(false)
-}
-
-#[cfg(target_os = "linux")]
-pub fn check_admin_permissions() -> bool {
-    // 使用标准库检查是否以 root 运行
-    std::process::Command::new("id")
-        .arg("-u")
-        .output()
-        .map(|output| {
-            String::from_utf8_lossy(&output.stdout).trim() == "0"
-        })
-        .unwrap_or(false)
-}
-
-#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-pub fn check_admin_permissions() -> bool {
-    false
-}
-
+/// 检查注册表写入权限（用于权限检测）
 #[cfg(windows)]
 pub fn test_registry_write_access() -> Result<(), BackupError> {
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -252,7 +227,10 @@ pub fn backup_current_machine_guid(
 ) -> Result<Option<MachineIdBackup>, BackupError> {
     let machine_id = read_machine_guid()?;
 
-    let store = load_backup_store()?;
+    // 只加载一次存储
+    let mut store = load_backup_store()?;
+    
+    // 检查是否已存在相同 GUID 的备份
     if store.has_guid(&machine_id.guid) {
         return Ok(None);
     }
@@ -268,7 +246,6 @@ pub fn backup_current_machine_guid(
         description,
     };
 
-    let mut store = load_backup_store()?;
     store.add_backup(backup.clone());
     save_backup_store(&store)?;
 
@@ -425,12 +402,10 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     Err(BackupError::UnsupportedPlatform)
 }
 
+/// 验证 GUID 格式
+/// 使用预编译的正则表达式提高性能
 fn validate_guid_format(guid: &str) -> Result<(), BackupError> {
-    let guid_pattern = regex::Regex::new(
-        r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-    )
-    .map_err(|e| BackupError::ParseError(e.to_string()))?;
-    if !guid_pattern.is_match(guid) {
+    if !GUID_PATTERN.is_match(guid) {
         return Err(BackupError::InvalidGuidFormat(guid.to_string()));
     }
     Ok(())
@@ -482,25 +457,72 @@ pub struct WriteResult {
     pub post_backup: Option<MachineIdBackup>,
 }
 
-pub fn generate_random_guid() -> String {
-    let mut rng = rand::thread_rng();
-    let bytes: [u8; 16] = rand::Rng::gen(&mut rng);
+/// 使用密码学安全的随机数生成器生成 GUID
+/// 遵循 RFC 4122 版本 4 UUID 标准
+pub fn generate_random_guid() -> Result<String, BackupError> {
+    let mut bytes = [0u8; 16];
+    OsRng.fill_bytes(&mut bytes);
 
-    format!(
-         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-         bytes[0], bytes[1], bytes[2], bytes[3],
-         bytes[4], bytes[5],
-         bytes[6], bytes[7],
-         bytes[8], bytes[9],
-         bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
-     )
+    // 设置版本 (4) 和变体位 (RFC 4122)
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // 版本 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // 变体 10
+
+    Ok(format!(
+        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        bytes[0], bytes[1], bytes[2], bytes[3],
+        bytes[4], bytes[5], bytes[6], bytes[7],
+        bytes[8], bytes[9], bytes[10], bytes[11],
+        bytes[12], bytes[13], bytes[14], bytes[15]
+    ))
 }
 
 pub fn generate_random_machine_guid(
     description: Option<String>,
 ) -> Result<WriteResult, BackupError> {
-    let new_guid = generate_random_guid();
+    let new_guid = generate_random_guid()?;
     write_machine_guid(&new_guid, description)
+}
+
+/// 以管理员权限重启应用程序
+/// 使用 Windows API 直接启动，避免命令注入风险
+#[cfg(windows)]
+pub fn restart_as_admin() -> Result<(), String> {
+    use std::process::Command;
+    use std::env;
+    
+    let current_exe = env::current_exe()
+        .map_err(|e| format!("无法获取当前程序路径: {}", e))?;
+    
+    // 使用 PowerShell 的 Start-Process 命令以管理员身份运行
+    // 使用 -LiteralPath 参数避免路径解析问题，并对路径进行转义
+    let exe_path = current_exe.to_string_lossy();
+    // 对单引号进行转义 (PowerShell 中使用两个单引号转义)
+    let safe_path = exe_path.replace("'", "''");
+    
+    let result = Command::new("powershell.exe")
+        .args(&[
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-Command",
+            &format!(
+                "Start-Process -LiteralPath '{}' -Verb RunAs -Wait:$false",
+                safe_path
+            ),
+        ])
+        .spawn();
+    
+    match result {
+        Ok(_) => {
+            // 成功启动后退出当前进程
+            std::process::exit(0);
+        }
+        Err(e) => Err(format!("无法以管理员身份启动: {}", e)),
+    }
+}
+
+#[cfg(not(windows))]
+pub fn restart_as_admin() -> Result<(), String> {
+    Err("不支持的操作系统".to_string())
 }
 
 #[cfg(test)]
@@ -853,7 +875,7 @@ mod tests {
 
     #[test]
     fn test_generate_random_guid_format() {
-        let guid = generate_random_guid();
+        let guid = generate_random_guid().expect("生成GUID应该成功");
         let result = validate_guid_format(&guid);
         assert!(result.is_ok(), "随机生成的GUID应该格式正确: {}", guid);
         assert_eq!(guid.len(), 36);
@@ -865,13 +887,16 @@ mod tests {
         assert_eq!(parts[2].len(), 4);
         assert_eq!(parts[3].len(), 4);
         assert_eq!(parts[4].len(), 12);
+        
+        // 验证版本号 (第13个字符应该是 '4')
+        assert_eq!(parts[2].chars().next().unwrap(), '4', "版本号应该是4");
     }
 
     #[test]
     fn test_generate_random_guid_uniqueness() {
         let mut guids = std::collections::HashSet::new();
         for _ in 0..100 {
-            let guid = generate_random_guid();
+            let guid = generate_random_guid().expect("生成GUID应该成功");
             assert!(guids.insert(guid), "应该生成唯一的GUID");
         }
     }
@@ -992,16 +1017,6 @@ mod tests {
             let restore_result = write_machine_guid(&original_guid.guid, None);
             assert!(restore_result.is_ok());
         });
-    }
-
-    #[test]
-    fn test_check_admin_permissions() {
-        let result = check_admin_permissions();
-        if cfg!(target_os = "windows") {
-            println!("管理员权限检测结果: {}", result);
-        } else {
-            assert!(!result);
-        }
     }
 
     #[test]
