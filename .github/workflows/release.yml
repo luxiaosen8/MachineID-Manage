@@ -172,7 +172,8 @@ jobs:
         with:
           name: windows-release
           path: |
-            src-tauri/target/release/bundle/
+            target/release/bundle/msi/*.msi
+            target/release/bundle/nsis/*.exe
             MachineID-Manage_*_windows_portable.zip
           retention-days: 30
 
