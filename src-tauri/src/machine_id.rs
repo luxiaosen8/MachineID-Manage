@@ -540,6 +540,7 @@ mod tests {
 
     struct TempBackupDir {
         _guard: TempDir,
+        #[allow(dead_code)]
         path: PathBuf,
     }
 
