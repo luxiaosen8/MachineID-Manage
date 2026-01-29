@@ -156,7 +156,9 @@ jobs:
           $portableDir = "MachineID-Manage_${version}_windows_portable"
           New-Item -ItemType Directory -Force -Path $portableDir
           Copy-Item "src-tauri/target/release/machineid-manage.exe" $portableDir/
-          Copy-Item "src-tauri/icons" $portableDir/ -Recurse
+          if (Test-Path "src-tauri/icons") {
+            Copy-Item "src-tauri/icons" $portableDir/ -Recurse
+          }
           Compress-Archive -Path $portableDir -DestinationPath "${portableDir}.zip" -Force
 
       - name: Upload artifacts
