@@ -48,6 +48,19 @@ const machineIdStore = useMachineIdStore();
 const backupStore = useBackupStore();
 
 onMounted(async () => {
+  // 屏蔽浏览器右键菜单，使应用更像原生应用
+  document.addEventListener('contextmenu', (e) => {
+    // 允许输入框的右键菜单（用于复制粘贴）
+    const target = e.target as HTMLElement;
+    const isInputElement = target.tagName === 'INPUT' ||
+                          target.tagName === 'TEXTAREA' ||
+                          target.isContentEditable;
+
+    if (!isInputElement) {
+      e.preventDefault();
+    }
+  });
+
   await machineIdStore.initialize();
   await backupStore.loadBackups();
 });

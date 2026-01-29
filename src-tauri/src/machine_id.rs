@@ -42,43 +42,52 @@ fn get_backup_file_path() -> Result<PathBuf, BackupError> {
 }
 
 /// 获取应用程序数据目录
+/// 使用程序所在目录下的 .data 文件夹存储数据，确保数据与程序关联
 #[cfg(windows)]
 fn get_app_data_dir() -> Result<PathBuf, BackupError> {
-    // Windows: 使用 %APPDATA%\MachineID-Manage
-    let app_data = std::env::var("APPDATA")
-        .map_err(|_| BackupError::StorageError("无法获取 APPDATA 目录".to_string()))?;
-    let mut path = PathBuf::from(app_data);
-    path.push("MachineID-Manage");
+    // 获取程序所在目录
+    let exe_path = std::env::current_exe()
+        .map_err(|e| BackupError::StorageError(format!("无法获取程序路径: {}", e)))?;
+    
+    let exe_dir = exe_path
+        .parent()
+        .ok_or_else(|| BackupError::StorageError("无法获取程序目录".to_string()))?;
+    
+    // 使用程序目录下的 .data 文件夹
+    let mut path = exe_dir.to_path_buf();
+    path.push(".data");
     Ok(path)
 }
 
 #[cfg(target_os = "macos")]
 fn get_app_data_dir() -> Result<PathBuf, BackupError> {
-    // macOS: 使用 ~/Library/Application Support/MachineID-Manage
-    let home = std::env::var("HOME")
-        .map_err(|_| BackupError::StorageError("无法获取 HOME 目录".to_string()))?;
-    let mut path = PathBuf::from(home);
-    path.push("Library");
-    path.push("Application Support");
-    path.push("MachineID-Manage");
+    // 获取程序所在目录（.app/Contents/MacOS/）
+    let exe_path = std::env::current_exe()
+        .map_err(|e| BackupError::StorageError(format!("无法获取程序路径: {}", e)))?;
+    
+    let exe_dir = exe_path
+        .parent()
+        .ok_or_else(|| BackupError::StorageError("无法获取程序目录".to_string()))?;
+    
+    // 使用程序目录下的 .data 文件夹
+    let mut path = exe_dir.to_path_buf();
+    path.push(".data");
     Ok(path)
 }
 
 #[cfg(target_os = "linux")]
 fn get_app_data_dir() -> Result<PathBuf, BackupError> {
-    // Linux: 使用 ~/.local/share/MachineID-Manage 或 $XDG_DATA_HOME/MachineID-Manage
-    if let Ok(xdg_data_home) = std::env::var("XDG_DATA_HOME") {
-        let mut path = PathBuf::from(xdg_data_home);
-        path.push("MachineID-Manage");
-        return Ok(path);
-    }
-
-    let home = std::env::var("HOME")
-        .map_err(|_| BackupError::StorageError("无法获取 HOME 目录".to_string()))?;
-    let mut path = PathBuf::from(home);
-    path.push(".local");
-    path.push("share");
-    path.push("MachineID-Manage");
+    // 获取程序所在目录
+    let exe_path = std::env::current_exe()
+        .map_err(|e| BackupError::StorageError(format!("无法获取程序路径: {}", e)))?;
+    
+    let exe_dir = exe_path
+        .parent()
+        .ok_or_else(|| BackupError::StorageError("无法获取程序目录".to_string()))?;
+    
+    // 使用程序目录下的 .data 文件夹
+    let mut path = exe_dir.to_path_buf();
+    path.push(".data");
     Ok(path)
 }
 
@@ -275,6 +284,29 @@ pub fn clear_all_backups() -> Result<(), BackupError> {
 pub fn get_backup_count() -> Result<usize, BackupError> {
     let store = load_backup_store()?;
     Ok(store.len())
+}
+
+/// 更新备份的描述信息
+pub fn update_backup_description(
+    id: &str,
+    description: Option<String>,
+) -> Result<MachineIdBackup, BackupError> {
+    let mut store = load_backup_store()?;
+
+    // 查找备份
+    let backup_index = store
+        .backups
+        .iter()
+        .position(|b| b.id == id)
+        .ok_or_else(|| BackupError::BackupNotFound(id.to_string()))?;
+
+    // 更新描述
+    store.backups[backup_index].description = description;
+
+    // 保存
+    save_backup_store(&store)?;
+
+    Ok(store.backups[backup_index].clone())
 }
 
 pub fn get_backup_by_id(id: &str) -> Result<MachineIdBackup, BackupError> {

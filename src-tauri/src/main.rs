@@ -3,10 +3,11 @@
 use crate::machine_id::clear_all_backups as machine_id_clear_all_backups;
 use crate::machine_id::get_backup_count as machine_id_get_backup_count;
 use crate::machine_id::list_backups as machine_id_list_backups;
+use crate::machine_id::update_backup_description as machine_id_update_backup_description;
 use crate::machine_id::{
-    backup_current_machine_guid, delete_backup, generate_random_machine_guid, read_machine_guid,
-    restore_backup_by_id, test_registry_write_access, write_machine_guid, BackupError,
-    MachineIdBackup, RestoreInfo, WriteResult,
+    backup_current_machine_guid, delete_backup, generate_random_guid, generate_random_machine_guid,
+    read_machine_guid, restore_backup_by_id, test_registry_write_access, write_machine_guid,
+    BackupError, MachineIdBackup, RestoreInfo, WriteResult,
 };
 use crate::platform::permissions::{
     check_admin_permissions, check_restart_state, request_elevation, RestartResult,
@@ -172,6 +173,46 @@ fn clear_all_backups() -> Result<BackupResponse, String> {
 }
 
 #[derive(serde::Serialize)]
+struct UpdateBackupDescriptionResponse {
+    success: bool,
+    backup: Option<MachineIdBackup>,
+    error: Option<String>,
+}
+
+#[tauri::command]
+fn update_backup_description_command(
+    id: String,
+    description: Option<String>,
+) -> Result<UpdateBackupDescriptionResponse, String> {
+    info!("更新备份描述: {}", id);
+
+    // 限制描述长度
+    let description = description.map(|d| {
+        if d.len() > MAX_DESCRIPTION_LENGTH {
+            d.chars().take(MAX_DESCRIPTION_LENGTH).collect()
+        } else {
+            d
+        }
+    });
+
+    match machine_id_update_backup_description(&id, description) {
+        Ok(backup) => Ok(UpdateBackupDescriptionResponse {
+            success: true,
+            backup: Some(backup),
+            error: None,
+        }),
+        Err(e) => {
+            warn!("更新备份描述失败: {}", e);
+            Ok(UpdateBackupDescriptionResponse {
+                success: false,
+                backup: None,
+                error: Some(sanitize_error_for_user(&e)),
+            })
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
 struct BackupCountResponse {
     success: bool,
     count: usize,
@@ -295,6 +336,13 @@ struct GenerateRandomGuidResponse {
 }
 
 #[derive(serde::Serialize)]
+struct PreviewGuidResponse {
+    success: bool,
+    guid: String,
+    error: Option<String>,
+}
+
+#[derive(serde::Serialize)]
 struct RestoreBackupResponse {
     success: bool,
     previous_guid: String,
@@ -354,9 +402,31 @@ fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, Str
     }
 }
 
+/// 预览随机生成的 GUID
+/// 用于前端显示预览值，确保预览值和实际替换值一致
+#[tauri::command]
+fn preview_random_guid_command() -> Result<PreviewGuidResponse, String> {
+    match generate_random_guid() {
+        Ok(guid) => Ok(PreviewGuidResponse {
+            success: true,
+            guid,
+            error: None,
+        }),
+        Err(e) => {
+            warn!("生成预览 GUID 失败: {}", e);
+            Ok(PreviewGuidResponse {
+                success: false,
+                guid: String::new(),
+                error: Some(sanitize_error_for_user(&e)),
+            })
+        }
+    }
+}
+
 #[tauri::command]
 fn generate_random_guid_command(
     description: Option<String>,
+    preview_guid: Option<String>,
 ) -> Result<GenerateRandomGuidResponse, String> {
     info!("生成随机机器码");
 
@@ -384,32 +454,65 @@ fn generate_random_guid_command(
         });
     }
 
-    match generate_random_machine_guid(description) {
-        Ok(WriteResult {
-            previous_guid,
-            new_guid: current_guid,
-            pre_backup,
-            post_backup,
-        }) => Ok(GenerateRandomGuidResponse {
-            success: true,
-            previous_guid,
-            new_guid: current_guid.clone(),
-            pre_backup,
-            post_backup,
-            message: format!("成功生成并替换 MachineGuid: {}", current_guid),
-            error: None,
-        }),
-        Err(e) => {
-            warn!("生成随机机器码失败: {}", e);
-            Ok(GenerateRandomGuidResponse {
-                success: false,
-                previous_guid: String::new(),
-                new_guid: String::new(),
-                pre_backup: None,
-                post_backup: None,
-                message: String::new(),
-                error: Some(sanitize_error_for_user(&e)),
-            })
+    // 如果提供了预览 GUID，直接使用预览值进行替换，确保一致性
+    if let Some(guid) = preview_guid {
+        match write_machine_guid(&guid, description) {
+            Ok(WriteResult {
+                previous_guid,
+                new_guid: current_guid,
+                pre_backup,
+                post_backup,
+            }) => Ok(GenerateRandomGuidResponse {
+                success: true,
+                previous_guid,
+                new_guid: current_guid.clone(),
+                pre_backup,
+                post_backup,
+                message: format!("成功生成并替换 MachineGuid: {}", current_guid),
+                error: None,
+            }),
+            Err(e) => {
+                warn!("使用预览 GUID 替换失败: {}", e);
+                Ok(GenerateRandomGuidResponse {
+                    success: false,
+                    previous_guid: String::new(),
+                    new_guid: String::new(),
+                    pre_backup: None,
+                    post_backup: None,
+                    message: String::new(),
+                    error: Some(sanitize_error_for_user(&e)),
+                })
+            }
+        }
+    } else {
+        // 如果没有提供预览 GUID，则生成新的 GUID
+        match generate_random_machine_guid(description) {
+            Ok(WriteResult {
+                previous_guid,
+                new_guid: current_guid,
+                pre_backup,
+                post_backup,
+            }) => Ok(GenerateRandomGuidResponse {
+                success: true,
+                previous_guid,
+                new_guid: current_guid.clone(),
+                pre_backup,
+                post_backup,
+                message: format!("成功生成并替换 MachineGuid: {}", current_guid),
+                error: None,
+            }),
+            Err(e) => {
+                warn!("生成随机机器码失败: {}", e);
+                Ok(GenerateRandomGuidResponse {
+                    success: false,
+                    previous_guid: String::new(),
+                    new_guid: String::new(),
+                    pre_backup: None,
+                    post_backup: None,
+                    message: String::new(),
+                    error: Some(sanitize_error_for_user(&e)),
+                })
+            }
         }
     }
 }
@@ -417,6 +520,13 @@ fn generate_random_guid_command(
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! This is MachineID-Manage v2.0.", name)
+}
+
+/// 获取应用程序版本号
+/// 从 Cargo.toml 中读取版本信息
+#[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
 }
 
 #[derive(serde::Serialize)]
@@ -644,7 +754,10 @@ fn main() {
             check_permission_command,
             test_write_access_command,
             restart_as_admin_command,
-            check_restart_state_command
+            check_restart_state_command,
+            get_app_version,
+            preview_random_guid_command,
+            update_backup_description_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

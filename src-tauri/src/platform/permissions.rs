@@ -1,5 +1,6 @@
 use crate::machine_id::BackupError;
 use serde::Serialize;
+use std::path::PathBuf;
 use tracing::{error, info, warn};
 
 /// 权限检查结果
@@ -321,16 +322,27 @@ pub fn request_elevation() -> Result<RestartResult, BackupError> {
     ))
 }
 
+/// 获取应用程序数据目录
+/// 使用程序所在目录下的 .data 文件夹存储数据
+#[cfg(windows)]
+fn get_app_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let exe_path = std::env::current_exe()?;
+    let exe_dir = exe_path
+        .parent()
+        .ok_or("无法获取程序目录")?;
+
+    let mut path = exe_dir.to_path_buf();
+    path.push(".data");
+    Ok(path)
+}
+
 /// 保存重启状态，以便重启后恢复
 #[cfg(windows)]
 fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
     use serde_json::json;
     use std::fs;
-    use std::path::PathBuf;
 
-    let app_data = std::env::var("APPDATA")?;
-    let mut state_path = PathBuf::from(app_data);
-    state_path.push("MachineID-Manage");
+    let mut state_path = get_app_data_dir()?;
 
     // 确保目录存在
     if !state_path.exists() {
@@ -363,11 +375,8 @@ fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(windows)]
 pub fn check_restart_state() -> Option<serde_json::Value> {
     use std::fs;
-    use std::path::PathBuf;
 
-    let app_data = std::env::var("APPDATA").ok()?;
-    let mut state_path = PathBuf::from(app_data);
-    state_path.push("MachineID-Manage");
+    let mut state_path = get_app_data_dir().ok()?;
     state_path.push("restart_state.json");
 
     if !state_path.exists() {

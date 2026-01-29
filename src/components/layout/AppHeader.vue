@@ -17,7 +17,7 @@
               MachineID-Manage
             </h1>
             <p class="text-xs text-slate-400">
-              Windows 机器码管理器 v2.0
+              Windows 机器码管理器 v{{ appVersion }}
             </p>
           </div>
         </div>
@@ -31,5 +31,10 @@
 
 <script setup lang="ts">
 import { Cpu } from 'lucide-vue-next';
+import { storeToRefs } from 'pinia';
 import PermissionBadge from '@components/ui/PermissionBadge.vue';
+import { useMachineIdStore } from '@stores';
+
+const machineIdStore = useMachineIdStore();
+const { appVersion } = storeToRefs(machineIdStore);
 </script>

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useBackupStore } from './backup';
 import type { MachineIdInfo, OperationResult, PermissionCheckResult } from '../types/index';
 
 /**
@@ -17,6 +18,7 @@ export const useMachineIdStore = defineStore('machineId', () => {
   const isLoading = ref<boolean>(false);
   const error = ref<string | null>(null);
   const lastCheckTime = ref<number>(0);
+  const appVersion = ref<string>('');
 
   // Getters
   const canModify = computed(() => hasPermission.value);
@@ -177,6 +179,9 @@ export const useMachineIdStore = defineStore('machineId', () => {
 
       if (result.success) {
         currentGuid.value = result.new_guid;
+        // 操作成功后刷新备份列表
+        const backupStore = useBackupStore();
+        await backupStore.loadBackups();
         return {
           success: true,
           data: { previousGuid: result.previous_guid, newGuid: result.new_guid },
@@ -195,10 +200,44 @@ export const useMachineIdStore = defineStore('machineId', () => {
   }
 
   /**
+   * 预览随机生成的 GUID
+   * 用于显示预览值，确保预览值和实际替换值一致
+   */
+  async function previewRandomGuid(): Promise<OperationResult<string>> {
+    try {
+      const result = await invoke<{
+        success: boolean;
+        guid: string;
+        error?: string;
+      }>('preview_random_guid_command');
+
+      if (result.success) {
+        return {
+          success: true,
+          data: result.guid,
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || '生成预览 GUID 失败',
+        };
+      }
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : '生成预览 GUID 失败',
+      };
+    }
+  }
+
+  /**
    * 生成随机机器码
+   * @param description 描述信息
+   * @param previewGuid 预览时生成的 GUID，确保预览值和实际替换值一致
    */
   async function generateRandomMachineId(
-    description?: string
+    description?: string,
+    previewGuid?: string
   ): Promise<OperationResult<{ previousGuid: string; newGuid: string }>> {
     isLoading.value = true;
     error.value = null;
@@ -210,10 +249,13 @@ export const useMachineIdStore = defineStore('machineId', () => {
         new_guid: string;
         message: string;
         error?: string;
-      }>('generate_random_guid_command', { description });
+      }>('generate_random_guid_command', { description, previewGuid });
 
       if (result.success) {
         currentGuid.value = result.new_guid;
+        // 操作成功后刷新备份列表
+        const backupStore = useBackupStore();
+        await backupStore.loadBackups();
         return {
           success: true,
           data: { previousGuid: result.previous_guid, newGuid: result.new_guid },
@@ -304,11 +346,27 @@ export const useMachineIdStore = defineStore('machineId', () => {
   }
 
   /**
+   * 获取应用程序版本号
+   */
+  async function getAppVersion(): Promise<string> {
+    try {
+      const version = await invoke<string>('get_app_version');
+      appVersion.value = version;
+      return version;
+    } catch (e) {
+      console.error('获取版本号失败:', e);
+      appVersion.value = '2.1.1';
+      return '2.1.1';
+    }
+  }
+
+  /**
    * 初始化
    */
   async function initialize(): Promise<void> {
     await checkPermission();
     await readMachineId();
+    await getAppVersion();
   }
 
   return {
@@ -321,6 +379,7 @@ export const useMachineIdStore = defineStore('machineId', () => {
     isLoading,
     error,
     lastCheckTime,
+    appVersion,
     // Getters
     canModify,
     isPermissionStale,
@@ -330,9 +389,11 @@ export const useMachineIdStore = defineStore('machineId', () => {
     refreshPermission,
     writeMachineId,
     generateRandomMachineId,
+    previewRandomGuid,
     restartAsAdmin,
     checkRestartState,
     copyToClipboard,
+    getAppVersion,
     initialize,
   };
 });

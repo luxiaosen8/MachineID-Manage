@@ -95,7 +95,6 @@ import { ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { X, AlertTriangle, RefreshCw, Sparkles } from 'lucide-vue-next';
 import { useDialogStore, useMachineIdStore } from '@stores';
-import { generateGuid } from '@utils';
 import Button from '@components/ui/Button.vue';
 
 const dialogStore = useDialogStore();
@@ -104,19 +103,31 @@ const machineIdStore = useMachineIdStore();
 const { generateModalVisible } = storeToRefs(dialogStore);
 const { isLoading } = storeToRefs(machineIdStore);
 
-const generatedGuid = ref(generateGuid());
+const generatedGuid = ref('');
 const description = ref('');
 
-// 当对话框打开时生成新的 GUID
-watch(() => generateModalVisible.value, (visible) => {
+// 当对话框打开时从后端获取预览 GUID
+watch(() => generateModalVisible.value, async (visible) => {
   if (visible) {
-    generatedGuid.value = generateGuid();
+    await refreshPreviewGuid();
     description.value = '';
   }
 });
 
+// 从后端获取预览 GUID，确保预览值和实际替换值一致
+async function refreshPreviewGuid() {
+  const result = await machineIdStore.previewRandomGuid();
+  if (result.success && result.data) {
+    generatedGuid.value = result.data;
+  } else {
+    // 如果后端获取失败，使用前端生成作为备选
+    const { generateGuid } = await import('@utils');
+    generatedGuid.value = generateGuid();
+  }
+}
+
 function regenerate() {
-  generatedGuid.value = generateGuid();
+  refreshPreviewGuid();
 }
 
 function close() {
@@ -134,7 +145,8 @@ async function handleGenerate() {
   });
 
   if (confirmed) {
-    const result = await machineIdStore.generateRandomMachineId(description.value);
+    // 传递预览的 GUID，确保预览值和实际替换值一致
+    const result = await machineIdStore.generateRandomMachineId(description.value, generatedGuid.value);
 
     if (result.success) {
       close();

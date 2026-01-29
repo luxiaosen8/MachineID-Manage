@@ -278,6 +278,48 @@ export const useBackupStore = defineStore('backup', () => {
     }
   }
 
+  /**
+   * 更新备份描述
+   */
+  async function updateBackupDescription(
+    id: string,
+    description?: string
+  ): Promise<OperationResult<BackupItem>> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const result = await invoke<{
+        success: boolean;
+        backup?: {
+          id: string;
+          guid: string;
+          source: string;
+          timestamp: number;
+          description?: string;
+        };
+        error?: string;
+      }>('update_backup_description_command', { id, description });
+
+      if (result.success && result.backup) {
+        // 更新本地列表中的备份
+        const index = backups.value.findIndex((b) => b.id === id);
+        if (index !== -1) {
+          backups.value[index] = result.backup;
+        }
+        return { success: true, data: result.backup };
+      } else {
+        error.value = result.error || '更新备份描述失败';
+        return { success: false, error: error.value };
+      }
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '未知错误';
+      return { success: false, error: error.value };
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   return {
     // State
     backups,
@@ -297,5 +339,6 @@ export const useBackupStore = defineStore('backup', () => {
     restoreBackup,
     selectBackup,
     copyBackupGuid,
+    updateBackupDescription,
   };
 });

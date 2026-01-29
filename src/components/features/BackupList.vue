@@ -58,15 +58,54 @@
                 <Clock class="w-3 h-3" />
                 {{ backup.formattedDate }}
               </span>
-              <span v-if="backup.description" class="text-slate-400 flex items-center gap-1">
+              <!-- 描述显示/编辑区域 -->
+              <div v-if="editingBackupId === backup.id" class="flex items-center gap-2 flex-1">
+                <input
+                  v-model="editingDescription"
+                  type="text"
+                  placeholder="输入备注..."
+                  class="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full max-w-[200px]"
+                  @keydown.enter="saveDescription(backup.id)"
+                  @keydown.esc="cancelEdit"
+                  @click.stop
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-6 w-6 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                  @click.stop="saveDescription(backup.id)"
+                >
+                  <Check class="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-6 w-6 text-slate-400 hover:text-slate-300 hover:bg-slate-700"
+                  @click.stop="cancelEdit"
+                >
+                  <X class="w-3 h-3" />
+                </Button>
+              </div>
+              <span v-else-if="backup.description" class="text-slate-400 flex items-center gap-1">
                 <FileText class="w-3 h-3" />
                 {{ backup.description }}
               </span>
+              <span v-else class="text-slate-600 italic">无备注</span>
             </div>
           </div>
           
           <!-- Actions -->
           <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <!-- 编辑描述按钮 -->
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10"
+              @click.stop="startEdit(backup)"
+              title="编辑备注"
+            >
+              <Edit3 class="w-4 h-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -102,10 +141,12 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { Archive, Trash2, Copy, RotateCcw, Clock, FileText } from 'lucide-vue-next';
+import { Archive, Trash2, Copy, RotateCcw, Clock, FileText, Edit3, Check, X } from 'lucide-vue-next';
 import { useBackupStore, useDialogStore, useMachineIdStore } from '@stores';
 import Button from '@components/ui/Button.vue';
+import type { BackupItem } from '@types';
 
 const backupStore = useBackupStore();
 const dialogStore = useDialogStore();
@@ -113,6 +154,33 @@ const machineIdStore = useMachineIdStore();
 
 const { formattedBackups, hasBackups, backupCount, selectedBackupId } = storeToRefs(backupStore);
 const { canModify } = storeToRefs(machineIdStore);
+
+// 编辑状态
+const editingBackupId = ref<string | null>(null);
+const editingDescription = ref('');
+
+function startEdit(backup: BackupItem) {
+  editingBackupId.value = backup.id;
+  editingDescription.value = backup.description || '';
+}
+
+function cancelEdit() {
+  editingBackupId.value = null;
+  editingDescription.value = '';
+}
+
+async function saveDescription(id: string) {
+  const description = editingDescription.value.trim() || undefined;
+  const result = await backupStore.updateBackupDescription(id, description);
+
+  if (result.success) {
+    await dialogStore.showSuccess('保存成功', '备份备注已更新');
+  } else {
+    await dialogStore.showError('保存失败', result.error || '更新备份备注时发生错误');
+  }
+
+  cancelEdit();
+}
 
 async function copyGuid(guid: string) {
   const success = await backupStore.copyBackupGuid(guid);
