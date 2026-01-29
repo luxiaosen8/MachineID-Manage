@@ -10,7 +10,7 @@
         
         <!-- Version & Links -->
         <div class="flex items-center gap-4 text-xs text-slate-500">
-          <span>版本 2.0.0</span>
+          <span>版本 {{ appVersion }}</span>
           <div class="w-px h-3 bg-slate-700" />
           <span class="hover:text-slate-400 cursor-pointer transition-colors">帮助文档</span>
           <div class="w-px h-3 bg-slate-700" />
@@ -23,4 +23,9 @@
 
 <script setup lang="ts">
 import { AlertTriangle } from 'lucide-vue-next';
+import { storeToRefs } from 'pinia';
+import { useMachineIdStore } from '@stores';
+
+const machineIdStore = useMachineIdStore();
+const { appVersion } = storeToRefs(machineIdStore);
 </script>
