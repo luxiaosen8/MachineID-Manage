@@ -155,7 +155,13 @@ jobs:
           $version = $version -replace '^v', ''
           $portableDir = "MachineID-Manage_${version}_windows_portable"
           New-Item -ItemType Directory -Force -Path $portableDir
-          Copy-Item "src-tauri/target/release/machineid-manage.exe" $portableDir/
+          # 查找构建后的可执行文件
+          $exePath = "src-tauri/target/release/machineid-manage.exe"
+          if (-not (Test-Path $exePath)) {
+            $exePath = "target/release/machineid-manage.exe"
+          }
+          Write-Host "Using executable at: $exePath"
+          Copy-Item $exePath $portableDir/
           if (Test-Path "src-tauri/icons") {
             Copy-Item "src-tauri/icons" $portableDir/ -Recurse
           }
