@@ -29,13 +29,13 @@ fn get_backup_file_path() -> Result<PathBuf, BackupError> {
 
     // 使用系统应用程序数据目录
     let app_data_dir = get_app_data_dir()?;
-    
+
     // 确保目录存在
     if !app_data_dir.exists() {
         fs::create_dir_all(&app_data_dir)
             .map_err(|e| BackupError::StorageError(format!("创建备份目录失败: {}", e)))?;
     }
-    
+
     let mut path = app_data_dir;
     path.push("backups.json");
     Ok(path)
@@ -72,7 +72,7 @@ fn get_app_data_dir() -> Result<PathBuf, BackupError> {
         path.push("MachineID-Manage");
         return Ok(path);
     }
-    
+
     let home = std::env::var("HOME")
         .map_err(|_| BackupError::StorageError("无法获取 HOME 目录".to_string()))?;
     let mut path = PathBuf::from(home);
@@ -229,7 +229,7 @@ pub fn backup_current_machine_guid(
 
     // 只加载一次存储
     let mut store = load_backup_store()?;
-    
+
     // 检查是否已存在相同 GUID 的备份
     if store.has_guid(&machine_id.guid) {
         return Ok(None);
@@ -360,14 +360,14 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
 #[cfg(target_os = "macos")]
 pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     use std::process::Command;
-    
+
     let output = Command::new("ioreg")
         .args(&["-rd1", "-c", "IOPlatformExpertDevice"])
         .output()
         .map_err(|e| BackupError::RegistryError(format!("Failed to execute ioreg: {}", e)))?;
-    
+
     let output_str = String::from_utf8_lossy(&output.stdout);
-    
+
     for line in output_str.lines() {
         if line.contains("IOPlatformUUID") {
             if let Some(start) = line.find('"') {
@@ -381,8 +381,10 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
             }
         }
     }
-    
-    Err(BackupError::RegistryError("Could not find IOPlatformUUID".to_string()))
+
+    Err(BackupError::RegistryError(
+        "Could not find IOPlatformUUID".to_string(),
+    ))
 }
 
 #[cfg(target_os = "linux")]
@@ -390,7 +392,7 @@ pub fn read_machine_guid() -> Result<MachineId, BackupError> {
     let machine_id = fs::read_to_string("/etc/machine-id")
         .or_else(|_| fs::read_to_string("/var/lib/dbus/machine-id"))
         .map_err(|e| BackupError::RegistryError(format!("Failed to read machine-id: {}", e)))?;
-    
+
     Ok(MachineId {
         guid: machine_id.trim().to_string(),
         source: "/etc/machine-id".to_string(),
@@ -434,7 +436,10 @@ pub fn write_machine_guid(
 
     let machine_id = read_machine_guid()?;
     Ok(WriteResult {
-        previous_guid: pre_backup.as_ref().map(|b| b.guid.clone()).unwrap_or_else(|| machine_id.guid.clone()),
+        previous_guid: pre_backup
+            .as_ref()
+            .map(|b| b.guid.clone())
+            .unwrap_or_else(|| machine_id.guid.clone()),
         new_guid: machine_id.guid.clone(),
         pre_backup,
         post_backup,
@@ -487,22 +492,22 @@ pub fn generate_random_machine_guid(
 /// 使用 Windows API 直接启动，避免命令注入风险
 #[cfg(windows)]
 pub fn restart_as_admin() -> Result<(), String> {
-    use std::process::Command;
     use std::env;
-    
-    let current_exe = env::current_exe()
-        .map_err(|e| format!("无法获取当前程序路径: {}", e))?;
-    
+    use std::process::Command;
+
+    let current_exe = env::current_exe().map_err(|e| format!("无法获取当前程序路径: {}", e))?;
+
     // 使用 PowerShell 的 Start-Process 命令以管理员身份运行
     // 使用 -LiteralPath 参数避免路径解析问题，并对路径进行转义
     let exe_path = current_exe.to_string_lossy();
     // 对单引号进行转义 (PowerShell 中使用两个单引号转义)
     let safe_path = exe_path.replace("'", "''");
-    
+
     let result = Command::new("powershell.exe")
         .args(&[
             "-NoProfile",
-            "-ExecutionPolicy", "Bypass",
+            "-ExecutionPolicy",
+            "Bypass",
             "-Command",
             &format!(
                 "Start-Process -LiteralPath '{}' -Verb RunAs -Wait:$false",
@@ -510,7 +515,7 @@ pub fn restart_as_admin() -> Result<(), String> {
             ),
         ])
         .spawn();
-    
+
     match result {
         Ok(_) => {
             // 成功启动后退出当前进程
@@ -813,10 +818,9 @@ mod tests {
             clear_all_backups().ok();
 
             let original = read_machine_guid().unwrap();
-            let target_backup =
-                backup_current_machine_guid(Some("恢复目标备份".to_string()))
-                    .unwrap()
-                    .expect("备份不应为空");
+            let target_backup = backup_current_machine_guid(Some("恢复目标备份".to_string()))
+                .unwrap()
+                .expect("备份不应为空");
 
             let test_guid = "550E8400-E29B-41D4-A716-446655440000";
             let change_result = write_machine_guid(test_guid, Some("准备恢复测试".to_string()));
@@ -887,7 +891,7 @@ mod tests {
         assert_eq!(parts[2].len(), 4);
         assert_eq!(parts[3].len(), 4);
         assert_eq!(parts[4].len(), 12);
-        
+
         // 验证版本号 (第13个字符应该是 '4')
         assert_eq!(parts[2].chars().next().unwrap(), '4', "版本号应该是4");
     }
@@ -946,7 +950,10 @@ mod tests {
             };
             store.add_backup(backup1.clone());
 
-            let result = store.backups.iter().find(|b| b.guid == "550E8400-E29B-41D4-A716-446655440000");
+            let result = store
+                .backups
+                .iter()
+                .find(|b| b.guid == "550E8400-E29B-41D4-A716-446655440000");
             assert!(result.is_some());
             assert_eq!(result.unwrap().id, "backup_1");
 

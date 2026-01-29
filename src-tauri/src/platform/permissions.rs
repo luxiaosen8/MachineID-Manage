@@ -1,6 +1,6 @@
-use serde::Serialize;
 use crate::machine_id::BackupError;
-use tracing::{info, warn, error};
+use serde::Serialize;
+use tracing::{error, info, warn};
 
 /// 权限检查结果
 #[derive(Debug, Clone, Serialize)]
@@ -54,22 +54,22 @@ pub struct RestartResult {
 }
 
 /// 检查是否以管理员身份运行
-/// 
+///
 /// Windows: 使用注册表写入权限检测
 /// macOS/Linux: 检查 uid 是否为 0
 #[cfg(windows)]
 pub fn check_admin_permissions() -> PermissionCheckResult {
     info!("开始检查管理员权限 (Windows)");
-    
+
     // 方法1: 尝试打开注册表的写入权限
     let registry_check = check_registry_write_permission();
-    
+
     // 如果注册表检测成功且有权限，直接返回
     if registry_check.has_permission {
         info!("权限检查通过: 具有注册表写入权限");
         return PermissionCheckResult::success(true, "registry_write");
     }
-    
+
     // 如果注册表检测失败（不是权限问题），返回错误
     if !registry_check.check_success {
         warn!("权限检查失败: 无法访问注册表");
@@ -79,7 +79,7 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
             registry_check.debug_info,
         );
     }
-    
+
     // 注册表检测成功但没有权限，说明是普通用户
     info!("权限检查通过: 普通用户权限");
     PermissionCheckResult::success(false, "registry_write")
@@ -90,16 +90,16 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
 fn check_registry_write_permission() -> PermissionCheckResult {
     use winreg::enums::*;
     use winreg::RegKey;
-    
+
     let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
     let crypt_path = "SOFTWARE\\Microsoft\\Cryptography";
-    
+
     match hkcu.open_subkey_with_flags(crypt_path, KEY_WRITE) {
         Ok(_) => PermissionCheckResult::success(true, "registry_write"),
         Err(e) => {
             let error_kind = e.kind();
             let debug_info = format!("Registry error: {:?}, kind: {:?}", e, error_kind);
-            
+
             if error_kind == std::io::ErrorKind::PermissionDenied {
                 // 权限被拒绝，说明是普通用户
                 PermissionCheckResult::success(false, "registry_write")
@@ -120,12 +120,19 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
     info!("开始检查管理员权限 (macOS)");
     let uid = unsafe { libc::getuid() };
     let has_permission = uid == 0;
-    
-    info!("权限检查结果: has_permission={}, uid={}", has_permission, uid);
-    
+
+    info!(
+        "权限检查结果: has_permission={}, uid={}",
+        has_permission, uid
+    );
+
     PermissionCheckResult::success(
         has_permission,
-        if has_permission { "root_user" } else { "non_root_user" }
+        if has_permission {
+            "root_user"
+        } else {
+            "non_root_user"
+        },
     )
 }
 
@@ -134,23 +141,26 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
     info!("开始检查管理员权限 (Linux)");
     let uid = unsafe { libc::getuid() };
     let has_permission = uid == 0;
-    
-    info!("权限检查结果: has_permission={}, uid={}", has_permission, uid);
-    
+
+    info!(
+        "权限检查结果: has_permission={}, uid={}",
+        has_permission, uid
+    );
+
     PermissionCheckResult::success(
         has_permission,
-        if has_permission { "root_user" } else { "non_root_user" }
+        if has_permission {
+            "root_user"
+        } else {
+            "non_root_user"
+        },
     )
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 pub fn check_admin_permissions() -> PermissionCheckResult {
     warn!("在不支持的操作系统上检查权限");
-    PermissionCheckResult::error(
-        "unsupported_platform",
-        "不支持的操作系统",
-        None,
-    )
+    PermissionCheckResult::error("unsupported_platform", "不支持的操作系统", None)
 }
 
 /// 申请提升权限（以管理员身份重启）
@@ -161,28 +171,26 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
 pub fn request_elevation() -> Result<RestartResult, BackupError> {
     use std::env;
     use std::ffi::OsStr;
-    use std::thread;
-    use std::time::Duration;
     use std::os::windows::ffi::OsStrExt;
     use std::ptr;
+    use std::thread;
+    use std::time::Duration;
+    use windows::Win32::Foundation::HWND;
     use windows::Win32::UI::Shell::ShellExecuteW;
     use windows::Win32::UI::WindowsAndMessaging::SHOW_WINDOW_CMD;
-    use windows::Win32::Foundation::HWND;
 
     info!("开始申请管理员权限重启 (Windows)");
 
-    let current_exe = env::current_exe()
-        .map_err(|e| {
-            error!("无法获取当前程序路径: {}", e);
-            BackupError::StorageError(format!("无法获取当前程序路径: {}", e))
-        })?;
+    let current_exe = env::current_exe().map_err(|e| {
+        error!("无法获取当前程序路径: {}", e);
+        BackupError::StorageError(format!("无法获取当前程序路径: {}", e))
+    })?;
 
     // 获取当前工作目录
-    let current_dir = env::current_dir()
-        .map_err(|e| {
-            error!("无法获取当前工作目录: {}", e);
-            BackupError::StorageError(format!("无法获取当前工作目录: {}", e))
-        })?;
+    let current_dir = env::current_dir().map_err(|e| {
+        error!("无法获取当前工作目录: {}", e);
+        BackupError::StorageError(format!("无法获取当前工作目录: {}", e))
+    })?;
 
     // 保存重启状态，以便重启后恢复
     if let Err(e) = save_restart_state() {
@@ -203,10 +211,7 @@ pub fn request_elevation() -> Result<RestartResult, BackupError> {
         .collect();
 
     // "runas" 操作 verb - 这会触发 UAC 提权
-    let runas_verb: Vec<u16> = OsStr::new("runas")
-        .encode_wide()
-        .chain(Some(0))
-        .collect();
+    let runas_verb: Vec<u16> = OsStr::new("runas").encode_wide().chain(Some(0)).collect();
 
     info!("准备以管理员身份启动程序: {:?}", current_exe);
     info!("工作目录: {:?}", current_dir);
@@ -215,12 +220,12 @@ pub fn request_elevation() -> Result<RestartResult, BackupError> {
     // 这是 Windows 上启动管理员进程的标准方法
     let result = unsafe {
         ShellExecuteW(
-            HWND(0),                // hwnd - 无父窗口
-            windows::core::PCWSTR(runas_verb.as_ptr()), // lpOperation - "runas" 触发 UAC
-            windows::core::PCWSTR(exe_path_wide.as_ptr()), // lpFile - 可执行文件路径
-            windows::core::PCWSTR(ptr::null()), // lpParameters - 无参数
+            HWND(0),                                          // hwnd - 无父窗口
+            windows::core::PCWSTR(runas_verb.as_ptr()),       // lpOperation - "runas" 触发 UAC
+            windows::core::PCWSTR(exe_path_wide.as_ptr()),    // lpFile - 可执行文件路径
+            windows::core::PCWSTR(ptr::null()),               // lpParameters - 无参数
             windows::core::PCWSTR(working_dir_wide.as_ptr()), // lpDirectory - 工作目录
-            SHOW_WINDOW_CMD(1),     // nShowCmd - SW_SHOWNORMAL
+            SHOW_WINDOW_CMD(1),                               // nShowCmd - SW_SHOWNORMAL
         )
     };
 
@@ -261,17 +266,21 @@ pub fn request_elevation() -> Result<RestartResult, BackupError> {
             _ => "未知错误",
         };
 
-        error!("无法以管理员身份启动，错误码: {} - {}", error_code, error_msg);
+        error!(
+            "无法以管理员身份启动，错误码: {} - {}",
+            error_code, error_msg
+        );
 
         // 如果用户取消了 UAC，返回更友好的错误信息
         if error_code == 5 || error_code == 106 || error_code == 1223 {
             Err(BackupError::StorageError(
-                "用户取消了权限提升请求".to_string()
+                "用户取消了权限提升请求".to_string(),
             ))
         } else {
-            Err(BackupError::StorageError(
-                format!("无法以管理员身份启动: {} (错误码: {})", error_msg, error_code)
-            ))
+            Err(BackupError::StorageError(format!(
+                "无法以管理员身份启动: {} (错误码: {})",
+                error_msg, error_code
+            )))
         }
     }
 }
@@ -279,28 +288,28 @@ pub fn request_elevation() -> Result<RestartResult, BackupError> {
 #[cfg(target_os = "macos")]
 pub fn request_elevation() -> Result<RestartResult, BackupError> {
     info!("申请管理员权限重启 (macOS)");
-    
+
     // 保存重启状态
     if let Err(e) = save_restart_state() {
         warn!("保存重启状态失败: {}", e);
     }
-    
+
     Err(BackupError::UnsupportedPlatform(
-        "请使用 sudo 重新启动应用程序".to_string()
+        "请使用 sudo 重新启动应用程序".to_string(),
     ))
 }
 
 #[cfg(target_os = "linux")]
 pub fn request_elevation() -> Result<RestartResult, BackupError> {
     info!("申请管理员权限重启 (Linux)");
-    
+
     // 保存重启状态
     if let Err(e) = save_restart_state() {
         warn!("保存重启状态失败: {}", e);
     }
-    
+
     Err(BackupError::UnsupportedPlatform(
-        "请使用 sudo 或 pkexec 重新启动应用程序".to_string()
+        "请使用 sudo 或 pkexec 重新启动应用程序".to_string(),
     ))
 }
 
@@ -308,28 +317,28 @@ pub fn request_elevation() -> Result<RestartResult, BackupError> {
 pub fn request_elevation() -> Result<RestartResult, BackupError> {
     warn!("在不支持的操作系统上申请权限提升");
     Err(BackupError::UnsupportedPlatform(
-        "不支持的操作系统".to_string()
+        "不支持的操作系统".to_string(),
     ))
 }
 
 /// 保存重启状态，以便重启后恢复
 #[cfg(windows)]
 fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
+    use serde_json::json;
     use std::fs;
     use std::path::PathBuf;
-    use serde_json::json;
-    
+
     let app_data = std::env::var("APPDATA")?;
     let mut state_path = PathBuf::from(app_data);
     state_path.push("MachineID-Manage");
-    
+
     // 确保目录存在
     if !state_path.exists() {
         fs::create_dir_all(&state_path)?;
     }
-    
+
     state_path.push("restart_state.json");
-    
+
     let state = json!({
         "timestamp": std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
@@ -337,10 +346,10 @@ fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
         "was_restarted": true,
         "platform": "windows"
     });
-    
+
     fs::write(&state_path, state.to_string())?;
     info!("重启状态已保存到: {:?}", state_path);
-    
+
     Ok(())
 }
 
@@ -355,35 +364,35 @@ fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
 pub fn check_restart_state() -> Option<serde_json::Value> {
     use std::fs;
     use std::path::PathBuf;
-    
+
     let app_data = std::env::var("APPDATA").ok()?;
     let mut state_path = PathBuf::from(app_data);
     state_path.push("MachineID-Manage");
     state_path.push("restart_state.json");
-    
+
     if !state_path.exists() {
         return None;
     }
-    
+
     let content = fs::read_to_string(&state_path).ok()?;
     let state: serde_json::Value = serde_json::from_str(&content).ok()?;
-    
+
     // 检查时间戳，如果超过 60 秒则认为不是当前的重启
     let timestamp = state.get("timestamp")?.as_u64()?;
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .ok()?
         .as_secs();
-    
+
     if now - timestamp > 60 {
         // 清理过期的状态文件
         let _ = fs::remove_file(&state_path);
         return None;
     }
-    
+
     // 清理已使用的状态文件
     let _ = fs::remove_file(&state_path);
-    
+
     info!("检测到重启状态: {:?}", state);
     Some(state)
 }
@@ -398,17 +407,17 @@ pub fn check_restart_state() -> Option<serde_json::Value> {
 pub fn clear_restart_state() -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
     use std::path::PathBuf;
-    
+
     let app_data = std::env::var("APPDATA")?;
     let mut state_path = PathBuf::from(app_data);
     state_path.push("MachineID-Manage");
     state_path.push("restart_state.json");
-    
+
     if state_path.exists() {
         fs::remove_file(&state_path)?;
         info!("重启状态已清除");
     }
-    
+
     Ok(())
 }
 
@@ -432,7 +441,8 @@ mod tests {
 
     #[test]
     fn test_permission_check_result_error() {
-        let result = PermissionCheckResult::error("test_error", "test message", Some("debug".to_string()));
+        let result =
+            PermissionCheckResult::error("test_error", "test message", Some("debug".to_string()));
         assert!(!result.has_permission);
         assert!(!result.check_success);
         assert_eq!(result.error_type, Some("test_error".to_string()));
@@ -445,15 +455,19 @@ mod tests {
         let result = check_admin_permissions();
         // 检查结果是否有效
         assert!(result.check_success || result.error_type.is_some());
-        
+
         // 如果检查成功，has_permission 应该是 true 或 false
         if result.check_success {
             // 在测试环境中，权限状态取决于测试运行方式
-            println!("权限检查结果: has_permission={}, method={}", 
-                result.has_permission, result.method);
+            println!(
+                "权限检查结果: has_permission={}, method={}",
+                result.has_permission, result.method
+            );
         } else {
-            println!("权限检查失败: error_type={:?}, error_message={:?}",
-                result.error_type, result.error_message);
+            println!(
+                "权限检查失败: error_type={:?}, error_message={:?}",
+                result.error_type, result.error_message
+            );
         }
     }
 
@@ -462,7 +476,7 @@ mod tests {
     fn test_registry_write_permission() {
         let result = check_registry_write_permission();
         println!("注册表权限检查结果: {:?}", result);
-        
+
         // 检查应该成功执行（无论是否有权限）
         assert!(result.check_success || result.error_type.is_some());
     }
@@ -472,7 +486,7 @@ mod tests {
     fn test_macos_permission_check() {
         let result = check_admin_permissions();
         assert!(result.check_success);
-        
+
         let uid = unsafe { libc::getuid() };
         let expected = uid == 0;
         assert_eq!(result.has_permission, expected);
@@ -483,12 +497,12 @@ mod tests {
     fn test_linux_permission_check() {
         let result = check_admin_permissions();
         assert!(result.check_success);
-        
+
         let uid = unsafe { libc::getuid() };
         let expected = uid == 0;
         assert_eq!(result.has_permission, expected);
     }
-    
+
     #[test]
     fn test_restart_result() {
         let result = RestartResult {
@@ -496,7 +510,7 @@ mod tests {
             message: "测试消息".to_string(),
             platform: "test".to_string(),
         };
-        
+
         assert!(result.success);
         assert_eq!(result.message, "测试消息");
         assert_eq!(result.platform, "test");

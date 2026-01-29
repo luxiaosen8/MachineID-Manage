@@ -4,12 +4,14 @@ use crate::machine_id::clear_all_backups as machine_id_clear_all_backups;
 use crate::machine_id::get_backup_count as machine_id_get_backup_count;
 use crate::machine_id::list_backups as machine_id_list_backups;
 use crate::machine_id::{
-    backup_current_machine_guid, delete_backup, BackupError,
-    generate_random_machine_guid, read_machine_guid, restore_backup_by_id, test_registry_write_access,
-    write_machine_guid, MachineIdBackup, RestoreInfo, WriteResult,
+    backup_current_machine_guid, delete_backup, generate_random_machine_guid, read_machine_guid,
+    restore_backup_by_id, test_registry_write_access, write_machine_guid, BackupError,
+    MachineIdBackup, RestoreInfo, WriteResult,
 };
-use crate::platform::permissions::{check_admin_permissions, request_elevation, check_restart_state, RestartResult};
-use tracing::{info, warn, error};
+use crate::platform::permissions::{
+    check_admin_permissions, check_restart_state, request_elevation, RestartResult,
+};
+use tracing::{error, info, warn};
 
 mod machine_id;
 mod platform;
@@ -21,30 +23,14 @@ fn sanitize_error_for_user(error: &BackupError) -> String {
         BackupError::InsufficientPermissions => {
             "权限不足，需要管理员权限才能执行此操作".to_string()
         }
-        BackupError::InvalidGuidFormat(_) => {
-            "GUID 格式无效，请检查输入".to_string()
-        }
-        BackupError::NotFound => {
-            "未找到 MachineGuid，系统可能尚未初始化".to_string()
-        }
-        BackupError::BackupNotFound(_) => {
-            "指定的备份不存在".to_string()
-        }
-        BackupError::RegistryWriteError(_) => {
-            "注册表写入失败，请检查权限或系统状态".to_string()
-        }
-        BackupError::RegistryError(_) => {
-            "注册表读取失败，请检查系统状态".to_string()
-        }
-        BackupError::StorageError(_) => {
-            "存储操作失败，请检查磁盘空间".to_string()
-        }
-        BackupError::ParseError(_) => {
-            "数据解析失败".to_string()
-        }
-        BackupError::UnsupportedPlatform => {
-            "当前操作系统不支持此功能".to_string()
-        }
+        BackupError::InvalidGuidFormat(_) => "GUID 格式无效，请检查输入".to_string(),
+        BackupError::NotFound => "未找到 MachineGuid，系统可能尚未初始化".to_string(),
+        BackupError::BackupNotFound(_) => "指定的备份不存在".to_string(),
+        BackupError::RegistryWriteError(_) => "注册表写入失败，请检查权限或系统状态".to_string(),
+        BackupError::RegistryError(_) => "注册表读取失败，请检查系统状态".to_string(),
+        BackupError::StorageError(_) => "存储操作失败，请检查磁盘空间".to_string(),
+        BackupError::ParseError(_) => "数据解析失败".to_string(),
+        BackupError::UnsupportedPlatform => "当前操作系统不支持此功能".to_string(),
     }
 }
 
@@ -229,7 +215,7 @@ fn write_machine_guid_command(
     description: Option<String>,
 ) -> Result<WriteGuidResponse, String> {
     info!("写入机器码: {}", new_guid);
-    
+
     // 验证 GUID 长度
     if new_guid.len() != GUID_LENGTH {
         return Ok(WriteGuidResponse {
@@ -242,7 +228,7 @@ fn write_machine_guid_command(
             error: Some(format!("GUID 长度必须为 {} 个字符", GUID_LENGTH)),
         });
     }
-    
+
     // 限制描述长度
     let description = description.map(|d| {
         if d.len() > MAX_DESCRIPTION_LENGTH {
@@ -251,7 +237,7 @@ fn write_machine_guid_command(
             d
         }
     });
-    
+
     // 服务端二次验证权限
     let perm_check = check_admin_permissions();
     if !perm_check.has_permission {
@@ -266,7 +252,7 @@ fn write_machine_guid_command(
             error: Some("权限不足，需要管理员权限".to_string()),
         });
     }
-    
+
     match write_machine_guid(&new_guid, description) {
         Ok(WriteResult {
             previous_guid,
@@ -322,7 +308,7 @@ struct RestoreBackupResponse {
 #[tauri::command]
 fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, String> {
     info!("恢复备份: {}", id);
-    
+
     // 服务端二次验证权限
     let perm_check = check_admin_permissions();
     if !perm_check.has_permission {
@@ -337,7 +323,7 @@ fn restore_backup_by_id_command(id: String) -> Result<RestoreBackupResponse, Str
             error: Some("权限不足，需要管理员权限".to_string()),
         });
     }
-    
+
     match restore_backup_by_id(&id) {
         Ok(RestoreInfo {
             previous_guid,
@@ -373,7 +359,7 @@ fn generate_random_guid_command(
     description: Option<String>,
 ) -> Result<GenerateRandomGuidResponse, String> {
     info!("生成随机机器码");
-    
+
     // 限制描述长度
     let description = description.map(|d| {
         if d.len() > MAX_DESCRIPTION_LENGTH {
@@ -382,7 +368,7 @@ fn generate_random_guid_command(
             d
         }
     });
-    
+
     // 服务端二次验证权限
     let perm_check = check_admin_permissions();
     if !perm_check.has_permission {
@@ -397,7 +383,7 @@ fn generate_random_guid_command(
             error: Some("权限不足，需要管理员权限".to_string()),
         });
     }
-    
+
     match generate_random_machine_guid(description) {
         Ok(WriteResult {
             previous_guid,
@@ -446,9 +432,11 @@ struct PermissionCheckResponse {
 #[tauri::command]
 fn check_permission_command() -> Result<PermissionCheckResponse, String> {
     let result = check_admin_permissions();
-    info!("权限检查: has_permission={}, method={}, check_success={}", 
-        result.has_permission, result.method, result.check_success);
-    
+    info!(
+        "权限检查: has_permission={}, method={}, check_success={}",
+        result.has_permission, result.method, result.check_success
+    );
+
     Ok(PermissionCheckResponse {
         success: result.check_success,
         has_permission: result.has_permission,
@@ -496,9 +484,13 @@ struct RestartAsAdminResponse {
 #[tauri::command]
 fn restart_as_admin_command() -> Result<RestartAsAdminResponse, String> {
     info!("收到以管理员权限重启请求");
-    
+
     match request_elevation() {
-        Ok(RestartResult { success, message, platform }) => {
+        Ok(RestartResult {
+            success,
+            message,
+            platform,
+        }) => {
             info!("重启请求成功: {}", message);
             Ok(RestartAsAdminResponse {
                 success,
@@ -533,18 +525,22 @@ fn check_restart_state_command() -> Result<RestartStateResponse, String> {
         Some(state) => {
             info!("检测到程序是从重启状态恢复");
             Ok(RestartStateResponse {
-                was_restarted: state.get("was_restarted").and_then(|v| v.as_bool()).unwrap_or(false),
+                was_restarted: state
+                    .get("was_restarted")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
                 timestamp: state.get("timestamp").and_then(|v| v.as_u64()),
-                platform: state.get("platform").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                platform: state
+                    .get("platform")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
             })
         }
-        None => {
-            Ok(RestartStateResponse {
-                was_restarted: false,
-                timestamp: None,
-                platform: None,
-            })
-        }
+        None => Ok(RestartStateResponse {
+            was_restarted: false,
+            timestamp: None,
+            platform: None,
+        }),
     }
 }
 
@@ -577,10 +573,7 @@ mod tests {
 
         // 测试备份不存在错误
         let backup_error = BackupError::BackupNotFound("123".to_string());
-        assert_eq!(
-            sanitize_error_for_user(&backup_error),
-            "指定的备份不存在"
-        );
+        assert_eq!(sanitize_error_for_user(&backup_error), "指定的备份不存在");
 
         // 测试不支持的系统错误
         let unsupported_error = BackupError::UnsupportedPlatform;
@@ -626,7 +619,7 @@ fn main() {
         .init();
 
     info!("MachineID-Manage v2.0 启动");
-    
+
     // 检查是否是重启后的状态
     if let Some(state) = check_restart_state() {
         info!("程序是从权限提升重启后启动的: {:?}", state);
