@@ -39,12 +39,12 @@ Check [REFACTORING.md](REFACTORING.md) for detailed refactoring information.
 
 ## Downloads
 
-### Latest Version (v2.0.0)
+### Latest Version (v2.1.0)
 
 | Platform | Installer | Portable |
 |----------|-----------|----------|
-| Windows x64 | [MachineID-Manage_2.0.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.0.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
-| Windows MSI | [MachineID-Manage_2.0.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+| Windows x64 | [MachineID-Manage_2.1.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.1.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_2.1.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
 
 > **Note**: All downloads are available on the [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) page.
 
@@ -231,6 +231,14 @@ npm run format
 ---
 
 ## Changelog
+
+### v2.1.0 (2026-01-29)
+- 🔧 **Fixed UAC Elevation Issue**
+- Replaced PowerShell-based elevation with native Windows API `ShellExecuteW`
+- Improved error handling for UAC cancellation
+- Added detailed error codes and messages
+- Fixed admin restart functionality
+- Enhanced stability and reliability
 
 ### v2.0.0 (2026-01-29)
 - 🎉 **Major Refactoring Version**

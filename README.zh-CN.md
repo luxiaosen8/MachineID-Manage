@@ -39,12 +39,12 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2 + Vue 3** 开发的 Windows �
 
 ## 下载
 
-### 最新版本 (v2.0.0)
+### 最新版本 (v2.1.0)
 
 | 平台 | 安装版 | 免安装版(便携版) |
 |------|--------|------------------|
-| Windows x64 | [MachineID-Manage_2.0.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.0.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
-| Windows MSI | [MachineID-Manage_2.0.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+| Windows x64 | [MachineID-Manage_2.1.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.1.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_2.1.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
 
 > **注意**: 所有下载均可在 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 页面获取。
 
@@ -231,6 +231,14 @@ npm run format
 ---
 
 ## 更新日志
+
+### v2.1.0 (2026-01-29)
+- 🔧 **修复 UAC 提权问题**
+- 将基于 PowerShell 的提权方式替换为原生 Windows API `ShellExecuteW`
+- 改进 UAC 取消时的错误处理
+- 添加详细的错误代码和消息
+- 修复管理员重启功能
+- 提升稳定性和可靠性
 
 ### v2.0.0 (2026-01-29)
 - 🎉 **重大重构版本**
