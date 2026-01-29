@@ -289,23 +289,46 @@ describe('MachineId Store', () => {
 
   describe('restartAsAdmin - 以管理员身份重启', () => {
     it('应成功触发重启', async () => {
-      mockedInvoke.mockResolvedValueOnce(undefined);
+      // 模拟新的 API 响应格式
+      mockedInvoke.mockResolvedValueOnce({
+        success: true,
+        message: '程序将以管理员身份重启',
+        platform: 'windows',
+        error: null,
+      });
 
       const store = useMachineIdStore();
       const result = await store.restartAsAdmin();
 
       expect(result.success).toBe(true);
+      expect(result.message).toBe('程序将以管理员身份重启');
       expect(mockedInvoke).toHaveBeenCalledWith('restart_as_admin_command');
     });
 
     it('应处理重启失败的情况', async () => {
-      mockedInvoke.mockRejectedValueOnce(new Error('重启失败'));
+      // 模拟后端返回的失败响应
+      mockedInvoke.mockResolvedValueOnce({
+        success: false,
+        message: '重启失败',
+        platform: 'windows',
+        error: '无法以管理员身份启动',
+      });
 
       const store = useMachineIdStore();
       const result = await store.restartAsAdmin();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('重启失败');
+      expect(result.error).toBe('无法以管理员身份启动');
+    });
+
+    it('应处理异常情况', async () => {
+      mockedInvoke.mockRejectedValueOnce(new Error('网络错误'));
+
+      const store = useMachineIdStore();
+      const result = await store.restartAsAdmin();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('网络错误');
     });
   });
 

@@ -236,12 +236,54 @@ export const useMachineIdStore = defineStore('machineId', () => {
    */
   async function restartAsAdmin(): Promise<OperationResult<void>> {
     try {
-      await invoke('restart_as_admin_command');
-      return { success: true };
+      const result = await invoke<{
+        success: boolean;
+        message: string;
+        platform: string;
+        error?: string;
+      }>('restart_as_admin_command');
+
+      if (result.success) {
+        // 重启请求成功，程序将在短时间内退出
+        // 返回成功，让前端显示相应提示
+        return { success: true, message: result.message };
+      } else {
+        return {
+          success: false,
+          error: result.error || '重启失败',
+        };
+      }
     } catch (e) {
       return {
         success: false,
         error: e instanceof Error ? e.message : '重启失败',
+      };
+    }
+  }
+
+  /**
+   * 检查是否是重启后的状态
+   */
+  async function checkRestartState(): Promise<OperationResult<{ wasRestarted: boolean; timestamp?: number; platform?: string }>> {
+    try {
+      const result = await invoke<{
+        was_restarted: boolean;
+        timestamp?: number;
+        platform?: string;
+      }>('check_restart_state_command');
+
+      return {
+        success: true,
+        data: {
+          wasRestarted: result.was_restarted,
+          timestamp: result.timestamp,
+          platform: result.platform,
+        },
+      };
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : '检查重启状态失败',
       };
     }
   }
@@ -289,6 +331,7 @@ export const useMachineIdStore = defineStore('machineId', () => {
     writeMachineId,
     generateRandomMachineId,
     restartAsAdmin,
+    checkRestartState,
     copyToClipboard,
     initialize,
   };

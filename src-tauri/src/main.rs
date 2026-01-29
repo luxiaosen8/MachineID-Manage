@@ -8,8 +8,8 @@ use crate::machine_id::{
     generate_random_machine_guid, read_machine_guid, restore_backup_by_id, test_registry_write_access,
     write_machine_guid, MachineIdBackup, RestoreInfo, WriteResult,
 };
-use crate::platform::permissions::{check_admin_permissions, request_elevation};
-use tracing::{info, warn};
+use crate::platform::permissions::{check_admin_permissions, request_elevation, check_restart_state, RestartResult};
+use tracing::{info, warn, error};
 
 mod machine_id;
 mod platform;
@@ -485,10 +485,67 @@ fn test_write_access_command() -> Result<PermissionCheckResponse, String> {
     }
 }
 
+#[derive(serde::Serialize)]
+struct RestartAsAdminResponse {
+    success: bool,
+    message: String,
+    platform: String,
+    error: Option<String>,
+}
+
 #[tauri::command]
-fn restart_as_admin_command() -> Result<(), String> {
-    info!("请求以管理员权限重启");
-    request_elevation().map_err(|e| e.to_string())
+fn restart_as_admin_command() -> Result<RestartAsAdminResponse, String> {
+    info!("收到以管理员权限重启请求");
+    
+    match request_elevation() {
+        Ok(RestartResult { success, message, platform }) => {
+            info!("重启请求成功: {}", message);
+            Ok(RestartAsAdminResponse {
+                success,
+                message,
+                platform,
+                error: None,
+            })
+        }
+        Err(e) => {
+            let error_msg = e.to_string();
+            error!("重启请求失败: {}", error_msg);
+            Ok(RestartAsAdminResponse {
+                success: false,
+                message: "重启失败".to_string(),
+                platform: std::env::consts::OS.to_string(),
+                error: Some(error_msg),
+            })
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
+struct RestartStateResponse {
+    was_restarted: bool,
+    timestamp: Option<u64>,
+    platform: Option<String>,
+}
+
+#[tauri::command]
+fn check_restart_state_command() -> Result<RestartStateResponse, String> {
+    match check_restart_state() {
+        Some(state) => {
+            info!("检测到程序是从重启状态恢复");
+            Ok(RestartStateResponse {
+                was_restarted: state.get("was_restarted").and_then(|v| v.as_bool()).unwrap_or(false),
+                timestamp: state.get("timestamp").and_then(|v| v.as_u64()),
+                platform: state.get("platform").and_then(|v| v.as_str()).map(|s| s.to_string()),
+            })
+        }
+        None => {
+            Ok(RestartStateResponse {
+                was_restarted: false,
+                timestamp: None,
+                platform: None,
+            })
+        }
+    }
 }
 
 #[cfg(test)]
@@ -569,6 +626,11 @@ fn main() {
         .init();
 
     info!("MachineID-Manage v2.0 启动");
+    
+    // 检查是否是重启后的状态
+    if let Some(state) = check_restart_state() {
+        info!("程序是从权限提升重启后启动的: {:?}", state);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -587,7 +649,8 @@ fn main() {
             restore_backup_by_id_command,
             check_permission_command,
             test_write_access_command,
-            restart_as_admin_command
+            restart_as_admin_command,
+            check_restart_state_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

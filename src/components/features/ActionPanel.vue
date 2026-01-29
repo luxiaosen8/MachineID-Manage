@@ -111,6 +111,7 @@ async function handleBackup() {
     b => b.guid.toLowerCase() === currentGuid.value.toLowerCase()
   );
 
+  let forceCreate = false;
   if (existingBackup) {
     // 已存在相同 GUID 的备份，弹窗提醒用户
     const confirmed = await dialogStore.showConfirm({
@@ -125,11 +126,16 @@ async function handleBackup() {
     if (!confirmed) {
       return; // 用户取消，不创建备份
     }
+    forceCreate = true; // 用户确认强制创建
   }
 
-  const result = await backupStore.createBackup('手动备份');
+  const result = await backupStore.createBackup('手动备份', forceCreate);
   if (result.success) {
-    await dialogStore.showSuccess('备份成功', result.message || '机器码已备份');
+    if (result.message === '该机器码已存在备份，已跳过') {
+      await dialogStore.showWarning('备份提示', '该机器码已存在备份，未创建新备份');
+    } else {
+      await dialogStore.showSuccess('备份成功', result.message || '机器码已备份');
+    }
   } else {
     await dialogStore.showError('备份失败', result.error || '备份过程中发生错误');
   }
@@ -148,7 +154,14 @@ async function handleGenerate() {
 
     if (confirmed) {
       const result = await machineIdStore.restartAsAdmin();
-      if (!result.success) {
+      if (result.success) {
+        // 重启请求成功，显示提示信息
+        await dialogStore.showSuccess(
+          '正在重启',
+          '程序将以管理员身份重启，请稍候...'
+        );
+        // 程序将在 500ms 后自动退出，不需要额外操作
+      } else {
         await dialogStore.showError('重启失败', result.error || '无法以管理员身份重启程序');
       }
     }
@@ -182,7 +195,14 @@ async function handleReplace() {
 
     if (confirmed) {
       const result = await machineIdStore.restartAsAdmin();
-      if (!result.success) {
+      if (result.success) {
+        // 重启请求成功，显示提示信息
+        await dialogStore.showSuccess(
+          '正在重启',
+          '程序将以管理员身份重启，请稍候...'
+        );
+        // 程序将在 500ms 后自动退出，不需要额外操作
+      } else {
         await dialogStore.showError('重启失败', result.error || '无法以管理员身份重启程序');
       }
     }

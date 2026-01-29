@@ -104,6 +104,7 @@ describe('Backup Store', () => {
         description: '手动备份',
       };
 
+      // Mock createBackup 调用（使用 force=true 跳过重复检查）
       mockedInvoke.mockResolvedValueOnce({
         success: true,
         backup: mockBackup,
@@ -111,20 +112,34 @@ describe('Backup Store', () => {
       });
 
       const store = useBackupStore();
-      const result = await store.createBackup('手动备份');
+      const result = await store.createBackup('手动备份', true); // 使用 force=true
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockBackup);
       expect(store.backups).toContainEqual(mockBackup);
-      expect(mockedInvoke).toHaveBeenCalledWith('backup_machine_guid', {
-        description: '手动备份',
-      });
     });
 
     it('应处理重复备份跳过的情况', async () => {
+      const existingBackup = {
+        id: '1',
+        guid: '550E8400-E29B-41D4-A716-446655440000',
+        source: 'manual',
+        timestamp: 1700000000,
+        description: '已有备份',
+      };
+
+      // Mock loadBackups 调用
       mockedInvoke.mockResolvedValueOnce({
         success: true,
-        skipped: true,
+        backups: [existingBackup],
+        count: 1,
+      });
+
+      // Mock read_machine_id 调用
+      mockedInvoke.mockResolvedValueOnce({
+        success: true,
+        guid: '550E8400-E29B-41D4-A716-446655440000',
+        source: 'manual',
       });
 
       const store = useBackupStore();
@@ -135,16 +150,54 @@ describe('Backup Store', () => {
     });
 
     it('应处理创建失败的情况', async () => {
+      // Mock loadBackups 调用
+      mockedInvoke.mockResolvedValueOnce({
+        success: true,
+        backups: [],
+        count: 0,
+      });
+
+      // Mock read_machine_id 调用
+      mockedInvoke.mockResolvedValueOnce({
+        success: true,
+        guid: '550E8400-E29B-41D4-A716-446655440000',
+        source: 'manual',
+      });
+
+      // Mock createBackup 失败
       mockedInvoke.mockResolvedValueOnce({
         success: false,
-        error: '创建失败',
+        error: '备份失败',
       });
 
       const store = useBackupStore();
       const result = await store.createBackup();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('创建失败');
+      expect(result.error).toBe('备份失败');
+    });
+
+    it('使用 force=true 时应跳过重复检查直接创建', async () => {
+      const mockBackup = {
+        id: '2',
+        guid: '550E8400-E29B-41D4-A716-446655440000',
+        source: 'manual',
+        timestamp: 1700000000,
+        description: '强制备份',
+      };
+
+      // Mock createBackup 调用（不调用 loadBackups 和 read_machine_id）
+      mockedInvoke.mockResolvedValueOnce({
+        success: true,
+        backup: mockBackup,
+        skipped: false,
+      });
+
+      const store = useBackupStore();
+      const result = await store.createBackup('强制备份', true);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockBackup);
     });
   });
 

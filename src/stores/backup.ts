@@ -68,12 +68,43 @@ export const useBackupStore = defineStore('backup', () => {
 
   /**
    * 创建备份
+   * @param description 备份描述
+   * @param force 是否强制创建（跳过重复检查）
    */
-  async function createBackup(description?: string): Promise<OperationResult<BackupItem>> {
+  async function createBackup(description?: string, force: boolean = false): Promise<OperationResult<BackupItem>> {
     isLoading.value = true;
     error.value = null;
 
     try {
+      // 如果不强制创建，先检查是否已存在相同 GUID 的备份
+      if (!force) {
+        const loadResult = await loadBackups();
+        if (loadResult.success && backups.value.length > 0) {
+          // 获取当前机器码
+          const { invoke } = await import('@tauri-apps/api/core');
+          const machineResult = await invoke<{
+            success: boolean;
+            guid: string;
+            source: string;
+            error?: string;
+          }>('read_machine_id');
+
+          if (machineResult.success) {
+            const existingBackup = backups.value.find(
+              b => b.guid.toLowerCase() === machineResult.guid.toLowerCase()
+            );
+
+            if (existingBackup) {
+              return {
+                success: true,
+                data: existingBackup,
+                message: '该机器码已存在备份，已跳过'
+              };
+            }
+          }
+        }
+      }
+
       const result = await invoke<{
         success: boolean;
         backup?: {
@@ -91,8 +122,9 @@ export const useBackupStore = defineStore('backup', () => {
         if (result.backup) {
           // 添加到列表开头
           backups.value.unshift(result.backup);
-          return { success: true, data: result.backup };
+          return { success: true, data: result.backup, message: '备份成功' };
         } else if (result.skipped) {
+          // 后端返回跳过，说明已存在相同 GUID 的备份
           return { success: true, message: '该机器码已存在备份，已跳过' };
         }
       }

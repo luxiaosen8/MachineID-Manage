@@ -1,5 +1,6 @@
 use serde::Serialize;
 use crate::machine_id::BackupError;
+use tracing::{info, warn, error};
 
 /// 权限检查结果
 #[derive(Debug, Clone, Serialize)]
@@ -44,22 +45,34 @@ impl PermissionCheckResult {
     }
 }
 
+/// 重启结果
+#[derive(Debug, Clone, Serialize)]
+pub struct RestartResult {
+    pub success: bool,
+    pub message: String,
+    pub platform: String,
+}
+
 /// 检查是否以管理员身份运行
 /// 
 /// Windows: 使用注册表写入权限检测
 /// macOS/Linux: 检查 uid 是否为 0
 #[cfg(windows)]
 pub fn check_admin_permissions() -> PermissionCheckResult {
+    info!("开始检查管理员权限 (Windows)");
+    
     // 方法1: 尝试打开注册表的写入权限
     let registry_check = check_registry_write_permission();
     
     // 如果注册表检测成功且有权限，直接返回
     if registry_check.has_permission {
+        info!("权限检查通过: 具有注册表写入权限");
         return PermissionCheckResult::success(true, "registry_write");
     }
     
     // 如果注册表检测失败（不是权限问题），返回错误
     if !registry_check.check_success {
+        warn!("权限检查失败: 无法访问注册表");
         return PermissionCheckResult::error(
             "registry_error",
             "无法访问注册表",
@@ -68,6 +81,7 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
     }
     
     // 注册表检测成功但没有权限，说明是普通用户
+    info!("权限检查通过: 普通用户权限");
     PermissionCheckResult::success(false, "registry_write")
 }
 
@@ -103,8 +117,11 @@ fn check_registry_write_permission() -> PermissionCheckResult {
 
 #[cfg(target_os = "macos")]
 pub fn check_admin_permissions() -> PermissionCheckResult {
+    info!("开始检查管理员权限 (macOS)");
     let uid = unsafe { libc::getuid() };
     let has_permission = uid == 0;
+    
+    info!("权限检查结果: has_permission={}, uid={}", has_permission, uid);
     
     PermissionCheckResult::success(
         has_permission,
@@ -114,8 +131,11 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
 
 #[cfg(target_os = "linux")]
 pub fn check_admin_permissions() -> PermissionCheckResult {
+    info!("开始检查管理员权限 (Linux)");
     let uid = unsafe { libc::getuid() };
     let has_permission = uid == 0;
+    
+    info!("权限检查结果: has_permission={}, uid={}", has_permission, uid);
     
     PermissionCheckResult::success(
         has_permission,
@@ -125,6 +145,7 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
 
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 pub fn check_admin_permissions() -> PermissionCheckResult {
+    warn!("在不支持的操作系统上检查权限");
     PermissionCheckResult::error(
         "unsupported_platform",
         "不支持的操作系统",
@@ -133,63 +154,267 @@ pub fn check_admin_permissions() -> PermissionCheckResult {
 }
 
 /// 申请提升权限（以管理员身份重启）
-/// 使用安全的参数传递方式，避免命令注入风险
+/// 使用 Windows ShellExecute API 触发 UAC 提权对话框
+///
+/// 返回 RestartResult，成功后会延迟退出当前进程
 #[cfg(windows)]
-pub fn request_elevation() -> Result<(), BackupError> {
-    use std::process::Command;
+pub fn request_elevation() -> Result<RestartResult, BackupError> {
     use std::env;
-    
+    use std::ffi::OsStr;
+    use std::thread;
+    use std::time::Duration;
+    use std::os::windows::ffi::OsStrExt;
+    use std::ptr;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SHOW_WINDOW_CMD;
+    use windows::Win32::Foundation::HWND;
+
+    info!("开始申请管理员权限重启 (Windows)");
+
     let current_exe = env::current_exe()
-        .map_err(|e| BackupError::StorageError(format!("无法获取当前程序路径: {}", e)))?;
-    
-    // 使用 PowerShell 的 Start-Process 命令以管理员身份运行
-    // 使用 -LiteralPath 参数避免路径解析问题，并对路径进行转义
-    let exe_path = current_exe.to_string_lossy();
-    // 对单引号进行转义 (PowerShell 中使用两个单引号转义)
-    let safe_path = exe_path.replace("'", "''");
-    
-    let result = Command::new("powershell.exe")
-        .args(&[
-            "-NoProfile",
-            "-ExecutionPolicy", "Bypass",
-            "-Command",
-            &format!(
-                "Start-Process -LiteralPath '{}' -Verb RunAs -Wait:$false",
-                safe_path
-            ),
-        ])
-        .spawn();
-    
-    match result {
-        Ok(_) => {
-            // 成功启动后退出当前进程
+        .map_err(|e| {
+            error!("无法获取当前程序路径: {}", e);
+            BackupError::StorageError(format!("无法获取当前程序路径: {}", e))
+        })?;
+
+    // 获取当前工作目录
+    let current_dir = env::current_dir()
+        .map_err(|e| {
+            error!("无法获取当前工作目录: {}", e);
+            BackupError::StorageError(format!("无法获取当前工作目录: {}", e))
+        })?;
+
+    // 保存重启状态，以便重启后恢复
+    if let Err(e) = save_restart_state() {
+        warn!("保存重启状态失败: {}", e);
+    }
+
+    // 将路径转换为宽字符 (UTF-16)
+    let exe_path_wide: Vec<u16> = current_exe
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
+
+    let working_dir_wide: Vec<u16> = current_dir
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
+
+    // "runas" 操作 verb - 这会触发 UAC 提权
+    let runas_verb: Vec<u16> = OsStr::new("runas")
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
+
+    info!("准备以管理员身份启动程序: {:?}", current_exe);
+    info!("工作目录: {:?}", current_dir);
+
+    // 使用 ShellExecuteW 触发 UAC 提权对话框
+    // 这是 Windows 上启动管理员进程的标准方法
+    let result = unsafe {
+        ShellExecuteW(
+            HWND(0),                // hwnd - 无父窗口
+            windows::core::PCWSTR(runas_verb.as_ptr()), // lpOperation - "runas" 触发 UAC
+            windows::core::PCWSTR(exe_path_wide.as_ptr()), // lpFile - 可执行文件路径
+            windows::core::PCWSTR(ptr::null()), // lpParameters - 无参数
+            windows::core::PCWSTR(working_dir_wide.as_ptr()), // lpDirectory - 工作目录
+            SHOW_WINDOW_CMD(1),     // nShowCmd - SW_SHOWNORMAL
+        )
+    };
+
+    // ShellExecuteW 返回值大于 32 表示成功
+    // HINSTANCE 的 0 字段是 isize 类型
+    let result_ptr = result.0;
+    if result_ptr > 32 {
+        info!("成功启动管理员进程，返回值: {:?}", result);
+
+        // 延迟退出，给前端时间处理响应，也给新进程时间启动
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(2));
+            info!("当前进程即将退出，新进程将以管理员身份运行");
             std::process::exit(0);
+        });
+
+        Ok(RestartResult {
+            success: true,
+            message: "程序将以管理员身份重启".to_string(),
+            platform: "windows".to_string(),
+        })
+    } else {
+        // 返回值小于等于 32 表示错误
+        let error_code = result_ptr as u32;
+        let error_msg = match error_code {
+            0 => "内存不足",
+            2 => "文件未找到",
+            3 => "路径未找到",
+            5 => "访问被拒绝（用户可能取消了 UAC 提示）",
+            8 => "内存不足",
+            11 => "EXE 文件无效",
+            26 => "共享错误",
+            27 => "文件关联不完整",
+            28 => "无法加载应用程序",
+            31 => "没有应用程序关联",
+            106 => "用户取消了 UAC 提示",
+            1223 => "用户取消了操作",
+            _ => "未知错误",
+        };
+
+        error!("无法以管理员身份启动，错误码: {} - {}", error_code, error_msg);
+
+        // 如果用户取消了 UAC，返回更友好的错误信息
+        if error_code == 5 || error_code == 106 || error_code == 1223 {
+            Err(BackupError::StorageError(
+                "用户取消了权限提升请求".to_string()
+            ))
+        } else {
+            Err(BackupError::StorageError(
+                format!("无法以管理员身份启动: {} (错误码: {})", error_msg, error_code)
+            ))
         }
-        Err(e) => Err(BackupError::StorageError(
-            format!("无法以管理员身份启动: {}", e)
-        )),
     }
 }
 
 #[cfg(target_os = "macos")]
-pub fn request_elevation() -> Result<(), BackupError> {
+pub fn request_elevation() -> Result<RestartResult, BackupError> {
+    info!("申请管理员权限重启 (macOS)");
+    
+    // 保存重启状态
+    if let Err(e) = save_restart_state() {
+        warn!("保存重启状态失败: {}", e);
+    }
+    
     Err(BackupError::UnsupportedPlatform(
         "请使用 sudo 重新启动应用程序".to_string()
     ))
 }
 
 #[cfg(target_os = "linux")]
-pub fn request_elevation() -> Result<(), BackupError> {
+pub fn request_elevation() -> Result<RestartResult, BackupError> {
+    info!("申请管理员权限重启 (Linux)");
+    
+    // 保存重启状态
+    if let Err(e) = save_restart_state() {
+        warn!("保存重启状态失败: {}", e);
+    }
+    
     Err(BackupError::UnsupportedPlatform(
         "请使用 sudo 或 pkexec 重新启动应用程序".to_string()
     ))
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-pub fn request_elevation() -> Result<(), BackupError> {
+pub fn request_elevation() -> Result<RestartResult, BackupError> {
+    warn!("在不支持的操作系统上申请权限提升");
     Err(BackupError::UnsupportedPlatform(
         "不支持的操作系统".to_string()
     ))
+}
+
+/// 保存重启状态，以便重启后恢复
+#[cfg(windows)]
+fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
+    use std::fs;
+    use std::path::PathBuf;
+    use serde_json::json;
+    
+    let app_data = std::env::var("APPDATA")?;
+    let mut state_path = PathBuf::from(app_data);
+    state_path.push("MachineID-Manage");
+    
+    // 确保目录存在
+    if !state_path.exists() {
+        fs::create_dir_all(&state_path)?;
+    }
+    
+    state_path.push("restart_state.json");
+    
+    let state = json!({
+        "timestamp": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs(),
+        "was_restarted": true,
+        "platform": "windows"
+    });
+    
+    fs::write(&state_path, state.to_string())?;
+    info!("重启状态已保存到: {:?}", state_path);
+    
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn save_restart_state() -> Result<(), Box<dyn std::error::Error>> {
+    // 非 Windows 平台暂时不实现
+    Ok(())
+}
+
+/// 检查是否是重启后的状态
+#[cfg(windows)]
+pub fn check_restart_state() -> Option<serde_json::Value> {
+    use std::fs;
+    use std::path::PathBuf;
+    
+    let app_data = std::env::var("APPDATA").ok()?;
+    let mut state_path = PathBuf::from(app_data);
+    state_path.push("MachineID-Manage");
+    state_path.push("restart_state.json");
+    
+    if !state_path.exists() {
+        return None;
+    }
+    
+    let content = fs::read_to_string(&state_path).ok()?;
+    let state: serde_json::Value = serde_json::from_str(&content).ok()?;
+    
+    // 检查时间戳，如果超过 60 秒则认为不是当前的重启
+    let timestamp = state.get("timestamp")?.as_u64()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    
+    if now - timestamp > 60 {
+        // 清理过期的状态文件
+        let _ = fs::remove_file(&state_path);
+        return None;
+    }
+    
+    // 清理已使用的状态文件
+    let _ = fs::remove_file(&state_path);
+    
+    info!("检测到重启状态: {:?}", state);
+    Some(state)
+}
+
+#[cfg(not(windows))]
+pub fn check_restart_state() -> Option<serde_json::Value> {
+    None
+}
+
+/// 清除重启状态
+#[cfg(windows)]
+pub fn clear_restart_state() -> Result<(), Box<dyn std::error::Error>> {
+    use std::fs;
+    use std::path::PathBuf;
+    
+    let app_data = std::env::var("APPDATA")?;
+    let mut state_path = PathBuf::from(app_data);
+    state_path.push("MachineID-Manage");
+    state_path.push("restart_state.json");
+    
+    if state_path.exists() {
+        fs::remove_file(&state_path)?;
+        info!("重启状态已清除");
+    }
+    
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub fn clear_restart_state() -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
 }
 
 #[cfg(test)]
@@ -262,5 +487,18 @@ mod tests {
         let uid = unsafe { libc::getuid() };
         let expected = uid == 0;
         assert_eq!(result.has_permission, expected);
+    }
+    
+    #[test]
+    fn test_restart_result() {
+        let result = RestartResult {
+            success: true,
+            message: "测试消息".to_string(),
+            platform: "test".to_string(),
+        };
+        
+        assert!(result.success);
+        assert_eq!(result.message, "测试消息");
+        assert_eq!(result.platform, "test");
     }
 }
