@@ -404,6 +404,7 @@ pub fn check_restart_state() -> Option<serde_json::Value> {
 
 /// 清除重启状态
 #[cfg(windows)]
+#[allow(dead_code)]
 pub fn clear_restart_state() -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
     use std::path::PathBuf;

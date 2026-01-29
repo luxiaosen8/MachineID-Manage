@@ -97,6 +97,7 @@ pub enum BackupError {
     #[error("MachineGuid 值不存在")]
     NotFound,
     #[error("MachineGuid 值解析失败: {0}")]
+    #[allow(dead_code)]
     ParseError(String),
     #[error("备份存储失败: {0}")]
     StorageError(String),
@@ -107,6 +108,7 @@ pub enum BackupError {
     #[error("权限不足，需要管理员权限才能修改注册表")]
     InsufficientPermissions,
     #[error("当前系统不支持该功能（仅支持 Windows）")]
+    #[allow(dead_code)]
     UnsupportedPlatform,
 }
 
@@ -491,6 +493,7 @@ pub fn generate_random_machine_guid(
 /// 以管理员权限重启应用程序
 /// 使用 Windows API 直接启动，避免命令注入风险
 #[cfg(windows)]
+#[allow(dead_code)]
 pub fn restart_as_admin() -> Result<(), String> {
     use std::env;
     use std::process::Command;
@@ -504,7 +507,7 @@ pub fn restart_as_admin() -> Result<(), String> {
     let safe_path = exe_path.replace("'", "''");
 
     let result = Command::new("powershell.exe")
-        .args(&[
+        .args([
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
