@@ -23,28 +23,26 @@
 
 MachineID-Manage is a Windows machine code management tool built with **Rust + Tauri 2 + Vue 3**. It allows you to read, backup, replace, and randomly generate Windows MachineGuid (machine identifier). The application provides a modern graphical interface to help users safely and efficiently perform system registry operations.
 
-### v2.0 Major Update
+### Key Features
 
-🎉 **Brand new refactored version is now released!**
-
-- ✨ Frontend fully upgraded to **Vue 3 + TypeScript**
-- ⚡ **Vite** build tool for enhanced development experience
-- 🎨 **Tailwind CSS** modern UI design
-- 📦 **Pinia** state management
-- 🔧 Tauri 2.0 latest features support
-
-Check [REFACTORING.md](REFACTORING.md) for detailed refactoring information.
+- 📖 **Read Machine ID** - Read MachineGuid from Windows registry
+- 💾 **Backup Management** - Backup and manage machine code configurations with custom descriptions
+- 🔄 **Restore Backup** - Restore machine code from backup
+- 🎲 **Random Generation** - Generate random valid GUIDs with preview
+- 🔧 **Custom Replacement** - Replace with custom machine code
+- 📋 **Copy Feature** - One-click copy machine code to clipboard
+- 🔒 **Permission Detection** - Real-time admin permission status
 
 ---
 
 ## Downloads
 
-### Latest Version (v2.1.0)
+### Latest Version (v2.2.0)
 
 | Platform | Installer | Portable |
 |----------|-----------|----------|
-| Windows x64 | [MachineID-Manage_2.1.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.1.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
-| Windows MSI | [MachineID-Manage_2.1.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+| Windows x64 | [MachineID-Manage_2.2.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.2.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_2.2.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
 
 > **Note**: All downloads are available on the [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) page.
 
@@ -56,11 +54,13 @@ Check [REFACTORING.md](REFACTORING.md) for detailed refactoring information.
 |:----:|---------|-------------|
 | 📖 | Read Machine ID | Read MachineGuid from Windows registry |
 | 💾 | Backup Management | Backup and manage machine code configurations |
+| 📝 | Edit Description | Add or edit backup descriptions |
 | 🔄 | Restore Backup | Restore machine code from backup |
-| 🎲 | Random Generation | Generate random valid GUIDs |
+| 🎲 | Random Generation | Generate random valid GUIDs with preview |
 | 🔧 | Custom Replacement | Replace with custom machine code |
 | 📋 | Copy Feature | One-click copy machine code to clipboard |
 | 🔒 | Permission Detection | Real-time admin permission status |
+| 🛡️ | Auto Backup | Automatic backup before modifications |
 
 ---
 
@@ -105,6 +105,8 @@ Check [REFACTORING.md](REFACTORING.md) for detailed refactoring information.
 2. Extract the ZIP file to your desired location
 3. Run `machineid-manage.exe` directly
 
+> **Note**: Portable version stores data in the `.data` folder within the application directory.
+
 #### Method 3: Build from Source
 ```bash
 # Clone the repository
@@ -125,9 +127,10 @@ npm run tauri:build
 
 1. **Read Machine ID** - Automatically reads current MachineGuid on app startup
 2. **Backup Machine ID** - Click "Backup Machine ID" to save current machine code
-3. **Random Generation** - Click "Random Generate" to create a new random GUID
-4. **Custom Replacement** - Enter a valid GUID and confirm replacement
-5. **Restore Backup** - Select and restore from the backup list
+3. **Edit Description** - Click the edit icon on any backup to add/modify description
+4. **Random Generation** - Click "Random Generate" to create a new random GUID (preview shown before confirmation)
+5. **Custom Replacement** - Enter a valid GUID and confirm replacement
+6. **Restore Backup** - Select and restore from the backup list
 
 ---
 
@@ -138,7 +141,8 @@ MachineID-Manage/
 ├── src-tauri/                # Tauri backend (Rust)
 │   ├── src/
 │   │   ├── main.rs          # Tauri command entry
-│   │   └── machine_id.rs    # Machine ID read/write logic
+│   │   ├── machine_id.rs    # Machine ID read/write logic
+│   │   └── platform/        # Platform-specific code
 │   ├── Cargo.toml           # Rust dependencies
 │   ├── tauri.conf.json      # Tauri configuration
 │   └── icons/               # App icons
@@ -160,9 +164,8 @@ MachineID-Manage/
 ├── tailwind.config.js      # Tailwind configuration
 ├── README.md               # Project documentation (English)
 ├── README.zh-CN.md         # Project documentation (Chinese)
-├── REFACTORING.md          # Refactoring documentation
-├── CONTRIBUTING.md         # Contribution guidelines
-└── LICENSE                 # MIT License
+├── LICENSE                 # MIT License
+└── .github/workflows/      # CI/CD workflows
 ```
 
 ---
@@ -231,6 +234,14 @@ npm run format
 ---
 
 ## Changelog
+
+### v2.2.0 (2026-01-30)
+- ✨ **Version Auto-Sync** - Version number now automatically syncs from Cargo.toml
+- 🎯 **GUID Preview Consistency** - Preview value now matches the actual replacement value
+- 🔄 **Auto Refresh Backups** - Backup list automatically refreshes after operations
+- 📝 **Edit Backup Description** - Support for editing backup descriptions
+- 📁 **Data Storage Path** - Changed to store data in `.data` folder within application directory
+- 🖱️ **Disable Context Menu** - Disabled browser context menu for native app experience
 
 ### v2.1.0 (2026-01-29)
 - 🔧 **Fixed UAC Elevation Issue**

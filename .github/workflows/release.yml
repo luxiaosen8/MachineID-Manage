@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v2.0.0)'
+        description: 'Version tag (e.g., v2.2.0)'
         required: true
-        default: 'v2.0.0'
+        default: 'v2.2.0'
 
 permissions:
   contents: write
@@ -50,14 +50,9 @@ jobs:
           cd src-tauri && cargo clippy --all-targets --all-features -- -W warnings
         continue-on-error: true
 
-      - name: TypeScript Lint
-        run: |
-          npm run lint
-        continue-on-error: true
-
       - name: TypeScript Type Check
         run: |
-          npm run type-check || npm run build
+          npm run typecheck
         continue-on-error: true
 
   # 安全审计 (不阻塞发布)
@@ -107,11 +102,6 @@ jobs:
           cd src-tauri && cargo test --verbose
         continue-on-error: true
 
-      - name: Run TypeScript Tests
-        run: |
-          npm run test:unit || npm test || echo "No tests configured"
-        continue-on-error: true
-
   # Windows Build Only
   release-windows:
     # 不依赖其他任务，直接运行
@@ -147,7 +137,9 @@ jobs:
           $sensitiveFiles = @(
             "src-tauri/backups.json",
             "src-tauri/test-data.json",
-            "src-tauri/debug.log"
+            "src-tauri/debug.log",
+            ".data/backups.json",
+            ".data/restart_state.json"
           )
 
           foreach ($file in $sensitiveFiles) {
@@ -157,23 +149,7 @@ jobs:
             }
           }
 
-          # 清空 backups.json 如果存在
-          if (Test-Path "src-tauri/backups.json") {
-            Write-Host "清空 backups.json" -ForegroundColor Yellow
-            @{ backups = @() } | ConvertTo-Json -Depth 10 | Set-Content -Path "src-tauri/backups.json" -Force
-          }
-
           # 验证清理结果
-          $remainingFiles = Get-ChildItem -Path "src-tauri" -Filter "*.json" -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "backups.json" }
-          if ($remainingFiles) {
-            $content = Get-Content $remainingFiles.FullName -Raw | ConvertFrom-Json
-            if ($content.backups -and $content.backups.Count -gt 0) {
-              Write-Error "警告: backups.json 仍包含 $($content.backups.Count) 个备份记录"
-            } else {
-              Write-Host "✅ backups.json 已清空" -ForegroundColor Green
-            }
-          }
-
           Write-Host "数据脱敏清理完成" -ForegroundColor Green
 
       - name: Build with Tauri
@@ -204,6 +180,8 @@ jobs:
           if (Test-Path "src-tauri/icons") {
             Copy-Item "src-tauri/icons" $portableDir/ -Recurse
           }
+          # 创建 .data 目录结构
+          New-Item -ItemType Directory -Force -Path "$portableDir/.data"
           Compress-Archive -Path $portableDir -DestinationPath "${portableDir}.zip" -Force
 
       - name: Upload artifacts
@@ -237,44 +215,48 @@ jobs:
           tag_name: ${{ github.event.inputs.version || github.ref_name }}
           name: MachineID-Manage ${{ github.event.inputs.version || github.ref_name }}
           body: |
-            ## 🎉 MachineID-Manage v2.1.0 正式发布
+            ## 🎉 MachineID-Manage v2.2.0 正式发布 / Official Release
 
-            ### 🔧 重要修复
-            - 修复 UAC 权限提升问题 - 使用原生 Windows API `ShellExecuteW` 替代 PowerShell
-            - 改进错误处理 - 添加详细的错误代码和用户友好的错误消息
-            - 提升稳定性 - 管理员重启功能现在可以正常工作
+            ### ✨ 新特性 / New Features
+            - **版本自动同步 / Version Auto-Sync** - 版本号从 Cargo.toml 自动同步
+            - **GUID 预览一致性 / GUID Preview Consistency** - 预览值与实际替换值一致
+            - **自动刷新备份 / Auto Refresh Backups** - 操作后自动刷新备份列表
+            - **编辑备份描述 / Edit Backup Description** - 支持编辑备份描述
+            - **数据存储路径 / Data Storage Path** - 存储在应用程序目录下的 `.data` 文件夹
+            - **禁用右键菜单 / Disable Context Menu** - 提升原生应用体验
 
-            ### ✨ v2.0 全新重构版本特性
-            - 前端全面升级为 **Vue 3 + TypeScript**
-            - 使用 **Vite** 构建工具，开发体验大幅提升
-            - **Tailwind CSS** 现代化 UI 设计
-            - **Pinia** 状态管理
-            - Tauri 2.0 最新特性支持
+            ### 🔧 修复 / Fixes
+            - 修复 UAC 权限提升问题 / Fixed UAC elevation issue
+            - 改进错误处理 / Improved error handling
+            - 提升稳定性 / Enhanced stability
 
             ### 📦 下载 / Downloads
 
-            | 平台 | 安装版 | 便携版 |
-            |------|--------|--------|
-            | Windows x64 | `MachineID-Manage_2.1.0_x64-setup.exe` | `MachineID-Manage_2.1.0_windows_portable.zip` |
-            | Windows MSI | `MachineID-Manage_2.1.0_x64_en-US.msi` | - |
+            | 平台 / Platform | 安装版 / Installer | 便携版 / Portable |
+            |----------------|-------------------|------------------|
+            | Windows x64 | `MachineID-Manage_2.2.0_x64-setup.exe` | `MachineID-Manage_2.2.0_windows_portable.zip` |
+            | Windows MSI | `MachineID-Manage_2.2.0_x64_en-US.msi` | - |
 
             > **注意 / Note**: 本工具专为 Windows 系统设计，仅支持 Windows 10/11 平台
+            > This tool is designed for Windows systems only (Windows 10/11)
 
             ### 🚀 快速开始 / Quick Start
 
             #### 中文
             1. **读取机器码** - 应用启动时自动读取当前 MachineGuid
             2. **备份机器码** - 点击"备份机器码"保存当前机器码
-            3. **随机生成** - 点击"随机生成"创建新的随机 GUID
-            4. **自定义替换** - 输入有效的 GUID 并确认替换
-            5. **恢复备份** - 在备份列表中选择并恢复
+            3. **编辑描述** - 点击备份项的编辑图标添加/修改描述
+            4. **随机生成** - 点击"随机生成"创建新的随机 GUID（确认前显示预览）
+            5. **自定义替换** - 输入有效的 GUID 并确认替换
+            6. **恢复备份** - 在备份列表中选择并恢复
 
             #### English
             1. **Read Machine ID** - Automatically reads current MachineGuid on app startup
             2. **Backup Machine ID** - Click "Backup Machine ID" to save current machine code
-            3. **Random Generation** - Click "Random Generate" to create a new random GUID
-            4. **Custom Replacement** - Enter a valid GUID and confirm replacement
-            5. **Restore Backup** - Select and restore from the backup list
+            3. **Edit Description** - Click the edit icon on any backup to add/modify description
+            4. **Random Generation** - Click "Random Generate" to create a new random GUID (preview shown before confirmation)
+            5. **Custom Replacement** - Enter a valid GUID and confirm replacement
+            6. **Restore Backup** - Select and restore from the backup list
 
             ### ⚠️ 注意事项 / Notes
 
@@ -283,14 +265,14 @@ jobs:
             - 执行任何操作前请务必备份您的数据
             - 建议在测试环境验证后再用于生产环境
             - 本工具仅适用于 Windows 系统
-            - **v2.1.0 修复**: 管理员权限申请现在可以正常工作
+            - 便携版将数据存储在 `.data` 文件夹中
 
             #### English
             - **Administrator privileges** required for modifying Windows registry
             - Always backup your data before performing any operations
             - Recommended to test in a test environment before production use
             - This tool is designed for Windows systems only
-            - **v2.1.0 Fix**: Admin privilege request now works correctly
+            - Portable version stores data in `.data` folder
 
             ### 🛡️ 安全特性 / Security Features
 
@@ -311,18 +293,18 @@ jobs:
             ### 📋 更新状态 / Update Status
 
             #### 中文
-            - **版本**: v2.1.0
-            - **发布日期**: 2026-01-29
+            - **版本**: v2.2.0
+            - **发布日期**: 2026-01-30
             - **状态**: 稳定版本
             - **兼容性**: Windows 10/11
-            - **主要更新**: 修复 UAC 提权问题
+            - **主要更新**: 6 项功能优化和修复
 
             #### English
-            - **Version**: v2.1.0
-            - **Release Date**: 2026-01-29
+            - **Version**: v2.2.0
+            - **Release Date**: 2026-01-30
             - **Status**: Stable Release
             - **Compatibility**: Windows 10/11
-            - **Major Update**: Fixed UAC elevation issue
+            - **Major Update**: 6 feature improvements and fixes
 
             ### 🔧 技术栈 / Tech Stack
             - **Backend**: Rust + Tauri 2

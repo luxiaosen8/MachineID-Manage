@@ -1,12 +1,12 @@
-# 机器码管理器 / MachineID-Manage
+# MachineID-Manage
 
 <div align="center">
 
-![机器码管理器](src-tauri/icons/icon.png)
+![MachineID-Manage](src-tauri/icons/icon.png)
 
 **[English](README.md)** | **[中文](README.zh-CN.md)**
 
-*基于 Rust + Tauri 2 + Vue 3 的 Windows 机器码管理器*
+*基于 Rust + Tauri 2 + Vue 3 开发的 Windows 机器码管理器*
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
@@ -19,48 +19,48 @@
 
 ---
 
-## 项目简介
+## 概述
 
-MachineID-Manage 是一款基于 **Rust + Tauri 2 + Vue 3** 开发的 Windows 机器码管理工具。它能够读取、备份、替换和随机生成 Windows MachineGuid（机器码标识符）。该应用程序提供现代化的图形界面，帮助用户安全高效地执行系统注册表操作。
+MachineID-Manage 是一款基于 **Rust + Tauri 2 + Vue 3** 开发的 Windows 机器码管理工具。它可以帮助您读取、备份、替换和随机生成 Windows MachineGuid（机器标识符）。该应用程序提供了现代化的图形界面，帮助用户安全高效地执行系统注册表操作。
 
-### v2.0 重大更新
+### 主要功能
 
-🎉 **全新重构版本现已发布！**
-
-- ✨ 前端全面升级为 **Vue 3 + TypeScript**
-- ⚡ 使用 **Vite** 构建工具，开发体验大幅提升
-- 🎨 **Tailwind CSS** 现代化 UI 设计
-- 📦 **Pinia** 状态管理
-- 🔧 Tauri 2.0 最新特性支持
-
-查看 [REFACTORING.md](REFACTORING.md) 了解详细重构内容。
+- 📖 **读取机器码** - 从 Windows 注册表读取 MachineGuid
+- 💾 **备份管理** - 备份和管理机器码配置，支持自定义描述
+- 🔄 **恢复备份** - 从备份恢复机器码
+- 🎲 **随机生成** - 生成随机有效的 GUID，支持预览
+- 🔧 **自定义替换** - 使用自定义机器码替换
+- 📋 **复制功能** - 一键复制机器码到剪贴板
+- 🔒 **权限检测** - 实时管理员权限状态
 
 ---
 
 ## 下载
 
-### 最新版本 (v2.1.0)
+### 最新版本 (v2.2.0)
 
-| 平台 | 安装版 | 免安装版(便携版) |
-|------|--------|------------------|
-| Windows x64 | [MachineID-Manage_2.1.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.1.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
-| Windows MSI | [MachineID-Manage_2.1.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
+| 平台 | 安装包 | 便携版 |
+|------|--------|--------|
+| Windows x64 | [MachineID-Manage_2.2.0_x64-setup.exe](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | [MachineID-Manage_2.2.0_windows_portable.zip](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) |
+| Windows MSI | [MachineID-Manage_2.2.0_x64_en-US.msi](https://github.com/luxiaosen8/MachineID-Manage/releases/latest) | - |
 
-> **注意**: 所有下载均可在 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 页面获取。
+> **注意**: 所有下载可在 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 页面获取。
 
 ---
 
 ## 功能特性
 
-| 图标 | 功能 | 说明 |
+| 图标 | 功能 | 描述 |
 |:----:|------|------|
 | 📖 | 读取机器码 | 从 Windows 注册表读取 MachineGuid |
 | 💾 | 备份管理 | 备份和管理机器码配置 |
+| 📝 | 编辑描述 | 添加或编辑备份描述 |
 | 🔄 | 恢复备份 | 从备份恢复机器码 |
-| 🎲 | 随机生成 | 生成随机有效的 GUID |
+| 🎲 | 随机生成 | 生成随机有效的 GUID，支持预览 |
 | 🔧 | 自定义替换 | 使用自定义机器码替换 |
 | 📋 | 复制功能 | 一键复制机器码到剪贴板 |
-| 🔒 | 权限检测 | 实时显示管理员权限状态 |
+| 🔒 | 权限检测 | 实时管理员权限状态 |
+| 🛡️ | 自动备份 | 修改前自动备份 |
 
 ---
 
@@ -90,22 +90,24 @@ MachineID-Manage 是一款基于 **Rust + Tauri 2 + Vue 3** 开发的 Windows �
 |------|------|
 | 操作系统 | Windows 10/11 |
 | Rust | 1.70 或更高版本 |
-| Node.js | 18+（用于开发）|
-| 管理员权限 | 修改注册表时需要 |
+| Node.js | 18+ (开发环境) |
+| 管理员权限 | 修改注册表需要 |
 
 ### 安装方法
 
-#### 方式一：安装版（推荐）
-1. 从 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 下载最新的 `.msi` 或 `.exe` 安装程序
-2. 运行安装程序并按照向导完成安装
+#### 方法 1: 安装包 (推荐)
+1. 从 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 下载最新的 `.msi` 或 `.exe` 安装包
+2. 运行安装程序并按照向导操作
 3. 从开始菜单启动 MachineID-Manage
 
-#### 方式二：便携版（免安装）
+#### 方法 2: 便携版 (无需安装)
 1. 从 [Releases](https://github.com/luxiaosen8/MachineID-Manage/releases) 下载 `MachineID-Manage_*_windows_portable.zip`
-2. 将 ZIP 文件解压到您想要的位置
+2. 解压 ZIP 文件到您想要的位置
 3. 直接运行 `machineid-manage.exe`
 
-#### 方式三：从源码构建
+> **注意**: 便携版将数据存储在应用程序目录下的 `.data` 文件夹中。
+
+#### 方法 3: 从源码构建
 ```bash
 # 克隆仓库
 git clone https://github.com/luxiaosen8/MachineID-Manage.git
@@ -125,9 +127,10 @@ npm run tauri:build
 
 1. **读取机器码** - 应用启动时自动读取当前 MachineGuid
 2. **备份机器码** - 点击"备份机器码"保存当前机器码
-3. **随机生成** - 点击"随机生成"创建新的随机 GUID
-4. **自定义替换** - 输入有效的 GUID 并确认替换
-5. **恢复备份** - 在备份列表中选择并恢复
+3. **编辑描述** - 点击备份项的编辑图标添加/修改描述
+4. **随机生成** - 点击"随机生成"创建新的随机 GUID（确认前显示预览）
+5. **自定义替换** - 输入有效的 GUID 并确认替换
+6. **恢复备份** - 从备份列表选择并恢复
 
 ---
 
@@ -138,8 +141,9 @@ MachineID-Manage/
 ├── src-tauri/                # Tauri 后端 (Rust)
 │   ├── src/
 │   │   ├── main.rs          # Tauri 命令入口
-│   │   └── machine_id.rs    # 机器码读写逻辑
-│   ├── Cargo.toml           # Rust 依赖配置
+│   │   ├── machine_id.rs    # 机器码读写逻辑
+│   │   └── platform/        # 平台特定代码
+│   ├── Cargo.toml           # Rust 依赖
 │   ├── tauri.conf.json      # Tauri 配置
 │   └── icons/               # 应用图标
 ├── src/                      # Vue 3 前端
@@ -147,7 +151,7 @@ MachineID-Manage/
 │   │   ├── ui/             # 基础 UI 组件
 │   │   ├── layout/         # 布局组件
 │   │   ├── features/       # 功能组件
-│   │   └── modals/         # 模态框组件
+│   │   └── modals/         # 弹窗组件
 │   ├── stores/             # Pinia 状态管理
 │   ├── types/              # TypeScript 类型
 │   ├── utils/              # 工具函数
@@ -158,11 +162,10 @@ MachineID-Manage/
 ├── vite.config.ts          # Vite 配置
 ├── tsconfig.json           # TypeScript 配置
 ├── tailwind.config.js      # Tailwind 配置
-├── README.md               # 项目说明（英文）
-├── README.zh-CN.md         # 项目说明（中文）
-├── REFACTORING.md          # 重构文档
-├── CONTRIBUTING.md         # 贡献指南
-└── LICENSE                 # MIT 开源协议
+├── README.md               # 项目文档 (英文)
+├── README.zh-CN.md         # 项目文档 (中文)
+├── LICENSE                 # MIT 许可证
+└── .github/workflows/      # CI/CD 工作流
 ```
 
 ---
@@ -175,7 +178,7 @@ MachineID-Manage/
 # 安装依赖
 npm install
 
-# 开发模式（带热重载）
+# 开发模式 (热重载)
 npm run dev
 
 # Tauri 开发模式
@@ -193,11 +196,11 @@ npm run test
 # 代码检查
 npm run lint
 
-# 格式化代码
+# 代码格式化
 npm run format
 ```
 
-### 开发环境配置
+### 开发环境设置
 
 1. 安装 [Rust](https://rustup.rs/)
 2. 安装 [Node.js](https://nodejs.org/) 18+
@@ -210,13 +213,13 @@ npm run format
 
 > **警告**
 >
-> 修改 Windows 注册表存在固有风险。执行任何操作前，请务必创建系统备份。
+> 修改 Windows 注册表存在固有风险。在执行任何操作前，请务必创建系统备份。
 
 ### 安全措施
 
-| 图标 | 措施 | 说明 |
+| 图标 | 措施 | 描述 |
 |:----:|------|------|
-| 🔒 | 权限检测 | 写入操作前检测管理员权限 |
+| 🔒 | 权限检测 | 写入操作前检查管理员权限 |
 | 💾 | 自动备份 | 修改前自动备份 |
 | ✅ | 用户确认 | 危险操作需要用户确认 |
 | 📝 | 操作日志 | 记录所有注册表修改操作 |
@@ -224,34 +227,42 @@ npm run format
 
 ### 安全建议
 
-1. **务必备份** - 使用前导出并保存当前 MachineGuid
-2. **先测后用** - 在测试环境验证操作效果
-3. **最小权限** - 仅在需要时授予管理员权限
+1. **始终备份** - 使用前导出并保存当前 MachineGuid
+2. **先测试** - 在测试环境中验证操作
+3. **最小权限** - 仅在必要时授予管理员权限
 
 ---
 
 ## 更新日志
 
+### v2.2.0 (2026-01-30)
+- ✨ **版本自动同步** - 版本号现在从 Cargo.toml 自动同步
+- 🎯 **GUID 预览一致性** - 预览值现在与实际替换值一致
+- 🔄 **自动刷新备份** - 操作后自动刷新备份列表
+- 📝 **编辑备份描述** - 支持编辑备份描述
+- 📁 **数据存储路径** - 改为在应用程序目录下的 `.data` 文件夹中存储数据
+- 🖱️ **禁用右键菜单** - 禁用浏览器右键菜单，提升原生应用体验
+
 ### v2.1.0 (2026-01-29)
 - 🔧 **修复 UAC 提权问题**
-- 将基于 PowerShell 的提权方式替换为原生 Windows API `ShellExecuteW`
-- 改进 UAC 取消时的错误处理
+- 用原生 Windows API `ShellExecuteW` 替代基于 PowerShell 的提权
+- 改进 UAC 取消的错误处理
 - 添加详细的错误代码和消息
 - 修复管理员重启功能
-- 提升稳定性和可靠性
+- 增强稳定性和可靠性
 
 ### v2.0.0 (2026-01-29)
 - 🎉 **重大重构版本**
-- 前端全面升级为 Vue 3 + TypeScript
-- 使用 Vite 替代传统构建方式
+- 前端全面升级至 Vue 3 + TypeScript
+- 用 Vite 替代传统构建工具
 - 引入 Pinia 状态管理
 - Tailwind CSS 现代化 UI
-- Tauri 2.0 完整支持
-- 新增权限可视化
-- 优化用户体验
+- 完整支持 Tauri 2.0
+- 添加权限可视化
+- 增强用户体验
 
 ### v1.4.0 (2026-01-28)
-- 修复 Tauri v2 的 GitHub Actions 工作流
+- 修复 Tauri v2 GitHub Actions 工作流
 - 版本更新至 1.4.0
 - 改进 CI/CD 流程
 
@@ -268,9 +279,9 @@ npm run format
 
 ---
 
-## 开源协议
+## 许可证
 
-本项目采用 MIT 协议开源。详情请阅读 [LICENSE](LICENSE) 文件。
+本项目基于 MIT 许可证开源。详情请查看 [LICENSE](LICENSE) 文件。
 
 ---
 
@@ -284,6 +295,6 @@ npm run format
 
 <div align="center">
 
-**感谢使用 MachineID-Manage！**
+**感谢您使用 MachineID-Manage！**
 
 </div>
