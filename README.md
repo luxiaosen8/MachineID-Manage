@@ -22,6 +22,7 @@
 ## Overview
 
 MachineID-Manage is a Windows machine code management tool built with **Rust + Tauri 2 + Vue 3**. It allows you to read, backup, replace, and randomly generate Windows MachineGuid (machine identifier). The application provides a modern graphical interface to help users safely and efficiently perform system registry operations.
+⚠️ This project is developed entirely by AI. No guarantees are made for its functionality or security, and it has only been tested and validated on Windows 11 to date.
 
 ### Key Features
 
